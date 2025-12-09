@@ -109,6 +109,12 @@ export default function ProductCatalog({ allProducts, categories, selectedCatego
     }
     // 'default' não aplica ordenação adicional, mantendo a ordem original após os filtros.
 
+    // 4. Se estiver na categoria "Todos" e houver lançamentos, remover produtos de lançamento do grid
+    // para evitar duplicação (eles aparecem no carrossel de lançamentos)
+    if (selectedCategory === 1) {
+      sortedProducts = sortedProducts.filter(product => !isLaunchValid(product));
+    }
+
     setFilteredProducts(sortedProducts);
   }, [allProducts, categories, selectedCategory, searchTerm, sortOption]); // Adiciona sortOption como dependência
 
@@ -187,9 +193,9 @@ export default function ProductCatalog({ allProducts, categories, selectedCatego
                   alt={banner.textOverlay || `Banner ${banner.id}`}
                   className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                 />
-                <div className="absolute inset-0 bg-black/40 group-hover:bg-black/60 transition-colors duration-300 p-4 flex items-end justify-start">
+                <div className="absolute inset-0 bg-black/40 group-hover:bg-black/60 transition-colors duration-300 p-4 flex items-center justify-center">
                   {banner.textOverlay && (
-                    <p className="font-serif text-white text-3xl md:text-5xl font-bold text-left px-4 drop-shadow-lg">
+                    <p className="font-serif text-white text-3xl md:text-5xl font-bold text-center px-4 drop-shadow-lg">
                       {banner.textOverlay}
                     </p>
                   )}
