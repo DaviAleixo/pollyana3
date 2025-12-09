@@ -38,12 +38,15 @@ function App() {
   const [searchTerm, setSearchTerm] = useState<string>('');
 
   useEffect(() => {
-    initializeData();
-    authService.initialize();
-    const fetchedCategories = categoriesService.getAll().filter(c => c.visivel);
-    setCategories(fetchedCategories);
-    const fetchedProducts = productsService.getVisible();
-    setAllProducts(fetchedProducts);
+    const loadData = async () => {
+      await initializeData();
+      authService.initialize();
+      const fetchedCategories = await categoriesService.getAll();
+      setCategories(fetchedCategories.filter(c => c.visivel));
+      const fetchedProducts = await productsService.getVisible();
+      setAllProducts(fetchedProducts);
+    };
+    loadData();
   }, []);
 
   const toggleSidebar = () => {

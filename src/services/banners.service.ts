@@ -1,89 +1,143 @@
 // Serviço de gerenciamento de banners
-// Centraliza toda a lógica de CRUD de banners
+// Centraliza toda a lógica de CRUD de banners usando Supabase
 
-import { Banner, BannerLinkType } from '../types';
-import { storageService, STORAGE_KEYS } from './storage.service';
-
-const BANNER_STORAGE_KEY = 'pollyana_banners';
+import { Banner } from '../types';
+import { supabase } from '../lib/supabase';
 
 class BannersService {
+  // Converte os dados do banco para o formato esperado pela aplicação
+  private mapFromDB(dbBanner: any): Banner {
+    return {
+      id: dbBanner.id,
+      imageUrl: dbBanner.image_url,
+      textOverlay: dbBanner.text_overlay,
+      isVisible: dbBanner.is_visible,
+      order: dbBanner.order,
+      linkType: dbBanner.link_type,
+      linkedProductId: dbBanner.linked_product_id,
+      linkedCategoryId: dbBanner.linked_category_id,
+      externalUrl: dbBanner.external_url,
+    };
+  }
+
+  // Converte os dados da aplicação para o formato do banco
+  private mapToDB(banner: Partial<Banner>): any {
+    const dbData: any = {};
+    if (banner.imageUrl !== undefined) dbData.image_url = banner.imageUrl;
+    if (banner.textOverlay !== undefined) dbData.text_overlay = banner.textOverlay;
+    if (banner.isVisible !== undefined) dbData.is_visible = banner.isVisible;
+    if (banner.order !== undefined) dbData.order = banner.order;
+    if (banner.linkType !== undefined) dbData.link_type = banner.linkType;
+    if (banner.linkedProductId !== undefined) dbData.linked_product_id = banner.linkedProductId;
+    if (banner.linkedCategoryId !== undefined) dbData.linked_category_id = banner.linkedCategoryId;
+    if (banner.externalUrl !== undefined) dbData.external_url = banner.externalUrl;
+    return dbData;
+  }
+
   // Obter todos os banners, opcionalmente filtrando por visibilidade e ordenando
-  getAll(onlyVisible: boolean = false): Banner[] {
-    const banners = storageService.get<Banner[]>(BANNER_STORAGE_KEY) || [];
-    let filteredBanners = banners;
+  async getAll(onlyVisible: boolean = false): Promise<Banner[]> {
+    let query = supabase
+      .from('banners')
+      .select('*')
+      .order('order', { ascending: true });
 
     if (onlyVisible) {
-      filteredBanners = banners.filter(banner => banner.isVisible);
+      query = query.eq('is_visible', true);
     }
 
-    // Sempre ordenar por 'order'
-    return filteredBanners.sort((a, b) => a.order - b.order);
+    const { data, error } = await query;
+
+    if (error) {
+      console.error('Erro ao buscar banners:', error);
+      return [];
+    }
+
+    return data ? data.map(this.mapFromDB) : [];
   }
 
   // Obter banner por ID
-  getById(id: number): Banner | undefined {
-    const banners = storageService.get<Banner[]>(BANNER_STORAGE_KEY) || [];
-    return banners.find(banner => banner.id === id);
+  async getById(id: number): Promise<Banner | undefined> {
+    const { data, error } = await supabase
+      .from('banners')
+      .select('*')
+      .eq('id', id)
+      .maybeSingle();
+
+    if (error) {
+      console.error('Erro ao buscar banner:', error);
+      return undefined;
+    }
+
+    return data ? this.mapFromDB(data) : undefined;
   }
 
   // Criar novo banner
-  create(bannerData: Omit<Banner, 'id'>): Banner {
-    const banners = storageService.get<Banner[]>(BANNER_STORAGE_KEY) || [];
-    const newId = Math.max(...banners.map(b => b.id), 0) + 1;
-
-    const newBanner: Banner = {
-      id: newId,
+  async create(bannerData: Omit<Banner, 'id'>): Promise<Banner | null> {
+    const allBanners = await this.getAll();
+    const newBanner = this.mapToDB({
       ...bannerData,
-      isVisible: bannerData.isVisible !== undefined ? bannerData.isVisible : true, // Default to visible
-      order: bannerData.order !== undefined ? bannerData.order : banners.length + 1, // Default to last order
-    };
+      isVisible: bannerData.isVisible !== undefined ? bannerData.isVisible : true,
+      order: bannerData.order !== undefined ? bannerData.order : allBanners.length + 1,
+    });
 
-    banners.push(newBanner);
-    storageService.set(BANNER_STORAGE_KEY, banners);
-    return newBanner;
+    const { data, error } = await supabase
+      .from('banners')
+      .insert(newBanner)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Erro ao criar banner:', error);
+      return null;
+    }
+
+    return data ? this.mapFromDB(data) : null;
   }
 
   // Atualizar banner existente
-  update(id: number, bannerData: Partial<Banner>): Banner | null {
-    const banners = storageService.get<Banner[]>(BANNER_STORAGE_KEY) || [];
-    const index = banners.findIndex(b => b.id === id);
+  async update(id: number, bannerData: Partial<Banner>): Promise<Banner | null> {
+    const updateData = this.mapToDB(bannerData);
 
-    if (index === -1) return null;
+    const { data, error } = await supabase
+      .from('banners')
+      .update(updateData)
+      .eq('id', id)
+      .select()
+      .single();
 
-    banners[index] = { ...banners[index], ...bannerData };
-    storageService.set(BANNER_STORAGE_KEY, banners);
-    return banners[index];
+    if (error) {
+      console.error('Erro ao atualizar banner:', error);
+      return null;
+    }
+
+    return data ? this.mapFromDB(data) : null;
   }
 
   // Excluir banner
-  delete(id: number): boolean {
-    const banners = storageService.get<Banner[]>(BANNER_STORAGE_KEY) || [];
-    const filtered = banners.filter(b => b.id !== id);
+  async delete(id: number): Promise<boolean> {
+    const { error } = await supabase
+      .from('banners')
+      .delete()
+      .eq('id', id);
 
-    if (filtered.length === banners.length) return false;
+    if (error) {
+      console.error('Erro ao deletar banner:', error);
+      return false;
+    }
 
-    storageService.set(BANNER_STORAGE_KEY, filtered);
     return true;
   }
 
   // Alternar visibilidade de um banner
-  toggleVisibility(id: number): Banner | null {
-    const banners = storageService.get<Banner[]>(BANNER_STORAGE_KEY) || [];
-    const index = banners.findIndex(b => b.id === id);
+  async toggleVisibility(id: number): Promise<Banner | null> {
+    const banner = await this.getById(id);
+    if (!banner) return null;
 
-    if (index === -1) return null;
-
-    banners[index] = { ...banners[index], isVisible: !banners[index].isVisible };
-    storageService.set(BANNER_STORAGE_KEY, banners);
-    return banners[index];
+    return this.update(id, { isVisible: !banner.isVisible });
   }
 
   // Inicializar banners se não existirem
-  initialize(): void {
-    const existing = storageService.get<Banner[]>(BANNER_STORAGE_KEY);
-    if (!existing) {
-      storageService.set(BANNER_STORAGE_KEY, []);
-    }
+  async initialize(): Promise<void> {
   }
 }
 

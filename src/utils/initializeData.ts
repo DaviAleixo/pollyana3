@@ -160,7 +160,6 @@ const mockProducts: Omit<Product, 'id'>[] = [
     visivel: true,
     estoque: 11,
   },
-  // NOVO PRODUTO DE LANÇAMENTO (Prioridade 1)
   {
     nome: 'Blusa de Seda Premium (Lançamento)',
     preco: 299.90,
@@ -171,10 +170,8 @@ const mockProducts: Omit<Product, 'id'>[] = [
     visivel: true,
     estoque: 25,
     isLaunch: true,
-    launchOrder: 1,
-    launchExpiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // Expira em 30 dias
+    launchExpiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
   },
-  // NOVO PRODUTO DE LANÇAMENTO (Prioridade 2, expira em 1 dia)
   {
     nome: 'Shorts Jeans Destroyed (Lançamento)',
     preco: 149.90,
@@ -185,8 +182,7 @@ const mockProducts: Omit<Product, 'id'>[] = [
     visivel: true,
     estoque: 18,
     isLaunch: true,
-    launchOrder: 2,
-    launchExpiresAt: new Date(Date.now() + 1 * 24 * 60 * 60 * 1000).toISOString(), // Expira em 1 dia
+    launchExpiresAt: new Date(Date.now() + 1 * 24 * 60 * 60 * 1000).toISOString(),
   },
 ];
 
@@ -226,31 +222,29 @@ const mockBanners: Omit<Banner, 'id'>[] = [
 ];
 
 // Função para inicializar todos os dados
-export function initializeData(): void {
-  // Inicializar categorias (incluindo categoria padrão "Todos")
-  categoriesService.initialize();
-  const existingCategories = categoriesService.getAll();
-  if (existingCategories.length <= 1) { // Se só tiver a categoria "Todos"
-    mockCategories.forEach(cat => categoriesService.create(cat));
+export async function initializeData(): Promise<void> {
+  await categoriesService.initialize();
+  const existingCategories = await categoriesService.getAll();
+  if (existingCategories.length <= 1) {
+    for (const cat of mockCategories) {
+      await categoriesService.create(cat);
+    }
   }
 
-  // Inicializar produtos com dados mock
-  productsService.initialize(mockProducts);
+  await productsService.initialize(mockProducts);
 
-  // Inicializar sistema de cliques
-  clicksService.initialize();
+  await clicksService.initialize();
 
-  // Inicializar sistema de estoque
-  stockService.initialize();
+  await stockService.initialize();
 
-  // Inicializar configurações de frete
-  shippingService.initialize();
+  await shippingService.initialize();
 
-  // Inicializar banners
-  bannersService.initialize();
-  const existingBanners = bannersService.getAll(false); // Pega todos os banners para verificar se já existem
+  await bannersService.initialize();
+  const existingBanners = await bannersService.getAll(false);
   if (existingBanners.length === 0) {
-    mockBanners.forEach(banner => bannersService.create(banner));
+    for (const banner of mockBanners) {
+      await bannersService.create(banner);
+    }
   }
 
   console.log('Dados inicializados com sucesso!');

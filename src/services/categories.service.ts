@@ -1,177 +1,243 @@
 // Serviço de gerenciamento de categorias
-// Centraliza toda a lógica de CRUD de categorias
+// Centraliza toda a lógica de CRUD de categorias usando Supabase
 
 import { Category } from '../types';
-import { storageService, STORAGE_KEYS } from './storage.service';
-import { productsService } from './products.service'; // Importar productsService para mover produtos
-
-// Categoria padrão "Todos" sempre presente
-const DEFAULT_CATEGORY: Category = {
-  id: 1,
-  nome: 'Todos',
-  visivel: true,
-  parentId: null,
-  slug: 'todos',
-  description: 'Todos os produtos do catálogo',
-  order: 0, // Sempre a primeira
-};
+import { supabase } from '../lib/supabase';
 
 class CategoriesService {
+  // Converte os dados do banco para o formato esperado pela aplicação
+  private mapFromDB(dbCategory: any): Category {
+    return {
+      id: dbCategory.id,
+      nome: dbCategory.nome,
+      visivel: dbCategory.visivel,
+      parentId: dbCategory.parent_id,
+      slug: dbCategory.slug,
+      description: dbCategory.description,
+      order: dbCategory.order,
+    };
+  }
+
+  // Converte os dados da aplicação para o formato do banco
+  private mapToDB(category: Partial<Category>): any {
+    const dbData: any = {};
+    if (category.nome !== undefined) dbData.nome = category.nome;
+    if (category.visivel !== undefined) dbData.visivel = category.visivel;
+    if (category.parentId !== undefined) dbData.parent_id = category.parentId;
+    if (category.slug !== undefined) dbData.slug = category.slug;
+    if (category.description !== undefined) dbData.description = category.description;
+    if (category.order !== undefined) dbData.order = category.order;
+    return dbData;
+  }
+
   // Obter todas as categorias, ordenadas e com estrutura plana
-  getAll(): Category[] {
-    const categories = storageService.get<Category[]>(STORAGE_KEYS.CATEGORIES);
-    return categories ? categories.sort((a, b) => a.order - b.order) : [DEFAULT_CATEGORY];
+  async getAll(): Promise<Category[]> {
+    const { data, error } = await supabase
+      .from('categories')
+      .select('*')
+      .order('order', { ascending: true });
+
+    if (error) {
+      console.error('Erro ao buscar categorias:', error);
+      return [];
+    }
+
+    return data ? data.map(this.mapFromDB) : [];
   }
 
   // Obter categoria por ID
-  getById(id: number): Category | undefined {
-    const categories = this.getAll();
-    return categories.find((cat) => cat.id === id);
+  async getById(id: number): Promise<Category | undefined> {
+    const { data, error } = await supabase
+      .from('categories')
+      .select('*')
+      .eq('id', id)
+      .maybeSingle();
+
+    if (error) {
+      console.error('Erro ao buscar categoria:', error);
+      return undefined;
+    }
+
+    return data ? this.mapFromDB(data) : undefined;
   }
 
   // Obter categorias de nível superior (sem pai)
-  getTopLevelCategories(): Category[] {
-    return this.getAll().filter(cat => cat.parentId === null);
+  async getTopLevelCategories(): Promise<Category[]> {
+    const { data, error } = await supabase
+      .from('categories')
+      .select('*')
+      .is('parent_id', null)
+      .order('order', { ascending: true });
+
+    if (error) {
+      console.error('Erro ao buscar categorias de nível superior:', error);
+      return [];
+    }
+
+    return data ? data.map(this.mapFromDB) : [];
   }
 
   // Obter subcategorias de uma categoria pai
-  getSubcategories(parentId: number | null): Category[] {
-    return this.getAll().filter(cat => cat.parentId === parentId);
+  async getSubcategories(parentId: number | null): Promise<Category[]> {
+    const query = supabase
+      .from('categories')
+      .select('*')
+      .order('order', { ascending: true });
+
+    if (parentId === null) {
+      query.is('parent_id', null);
+    } else {
+      query.eq('parent_id', parentId);
+    }
+
+    const { data, error } = await query;
+
+    if (error) {
+      console.error('Erro ao buscar subcategorias:', error);
+      return [];
+    }
+
+    return data ? data.map(this.mapFromDB) : [];
   }
 
   // Gerar slug a partir do nome
   private generateSlug(name: string): string {
     return name
       .toLowerCase()
-      .normalize('NFD') // Normaliza caracteres acentuados
-      .replace(/[\u0300-\u036f]/g, '') // Remove acentos
-      .replace(/[^\w\s-]/g, '') // Remove caracteres especiais
-      .replace(/\s+/g, '-') // Substitui espaços por hífens
-      .replace(/--+/g, '-') // Remove hífens duplicados
-      .trim(); // Remove espaços em branco no início/fim
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^\w\s-]/g, '')
+      .replace(/\s+/g, '-')
+      .replace(/--+/g, '-')
+      .trim();
   }
 
   // Criar nova categoria
-  create(categoryData: Omit<Category, 'id' | 'slug' | 'order'> & { parentId?: number | null }): Category {
-    const categories = this.getAll();
-    const newId = Math.max(...categories.map((c) => c.id), 0) + 1;
+  async create(categoryData: Omit<Category, 'id' | 'slug' | 'order'> & { parentId?: number | null }): Promise<Category | null> {
     const slug = this.generateSlug(categoryData.nome);
 
-    // Determinar a ordem: última entre seus irmãos ou última no nível raiz
-    const siblings = this.getSubcategories(categoryData.parentId || null);
+    const siblings = await this.getSubcategories(categoryData.parentId || null);
     const order = siblings.length > 0 ? Math.max(...siblings.map(s => s.order)) + 1 : 0;
 
-    const newCategory: Category = {
-      id: newId,
-      ...categoryData,
-      parentId: categoryData.parentId === undefined ? null : categoryData.parentId,
+    const newCategory = {
+      nome: categoryData.nome,
+      visivel: categoryData.visivel,
+      parent_id: categoryData.parentId === undefined ? null : categoryData.parentId,
       slug,
+      description: categoryData.description,
       order,
     };
 
-    categories.push(newCategory);
-    storageService.set(STORAGE_KEYS.CATEGORIES, categories);
+    const { data, error } = await supabase
+      .from('categories')
+      .insert(newCategory)
+      .select()
+      .single();
 
-    return newCategory;
+    if (error) {
+      console.error('Erro ao criar categoria:', error);
+      return null;
+    }
+
+    return data ? this.mapFromDB(data) : null;
   }
 
   // Atualizar categoria existente
-  update(id: number, categoryData: Partial<Omit<Category, 'slug'>>): Category | null {
-    const categories = this.getAll();
-    const index = categories.findIndex((cat) => cat.id === id);
-
-    if (index === -1) return null;
-
-    // Não permitir edição da categoria padrão "Todos"
+  async update(id: number, categoryData: Partial<Omit<Category, 'slug'>>): Promise<Category | null> {
     if (id === 1) {
       console.warn('Cannot edit default category');
-      return categories[index];
+      const category = await this.getById(id);
+      return category || null;
     }
 
-    // Gerar novo slug se o nome for alterado
-    const updatedSlug = categoryData.nome ? this.generateSlug(categoryData.nome) : categories[index].slug;
+    const updateData = this.mapToDB(categoryData);
 
-    categories[index] = { ...categories[index], ...categoryData, slug: updatedSlug };
-    storageService.set(STORAGE_KEYS.CATEGORIES, categories);
+    if (categoryData.nome) {
+      updateData.slug = this.generateSlug(categoryData.nome);
+    }
 
-    return categories[index];
+    const { data, error } = await supabase
+      .from('categories')
+      .update(updateData)
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Erro ao atualizar categoria:', error);
+      return null;
+    }
+
+    return data ? this.mapFromDB(data) : null;
   }
 
   // Excluir categoria
-  delete(id: number): boolean {
-    // Não permitir exclusão da categoria padrão "Todos"
+  async delete(id: number): Promise<boolean> {
     if (id === 1) {
       console.warn('Cannot delete default category');
       return false;
     }
 
-    const categories = this.getAll();
-    const categoryToDelete = categories.find(cat => cat.id === id);
+    const categoryToDelete = await this.getById(id);
     if (!categoryToDelete) return false;
 
-    // Mover subcategorias para o pai da categoria excluída (ou para a raiz se a excluída era raiz)
-    const children = this.getSubcategories(id);
-    children.forEach(child => {
-      this.update(child.id, { parentId: categoryToDelete.parentId });
-    });
+    const children = await this.getSubcategories(id);
+    for (const child of children) {
+      await this.update(child.id, { parentId: categoryToDelete.parentId });
+    }
 
-    const filtered = categories.filter((cat) => cat.id !== id);
+    await supabase
+      .from('products')
+      .update({ categoria_id: 1 })
+      .eq('categoria_id', id);
 
-    if (filtered.length === categories.length) return false;
+    const { error } = await supabase
+      .from('categories')
+      .delete()
+      .eq('id', id);
 
-    storageService.set(STORAGE_KEYS.CATEGORIES, filtered);
-
-    // Mover produtos da categoria excluída para "Todos"
-    this.moveProductsToDefault(id);
+    if (error) {
+      console.error('Erro ao deletar categoria:', error);
+      return false;
+    }
 
     return true;
   }
 
-  // Mover produtos de uma categoria para a categoria padrão
-  private moveProductsToDefault(categoryId: number): void {
-    const products = productsService.getAll(); // Usar o serviço de produtos
-    const updated = products.map((product) =>
-      product.categoriaId === categoryId
-        ? { ...product, categoriaId: 1 }
-        : product
-    );
-    storageService.set(STORAGE_KEYS.PRODUCTS, updated);
-  }
-
   // Reordenar categorias
-  reorder(categoryId: number, newOrder: number, newParentId: number | null): void {
-    const categories = this.getAll();
-    const categoryToMove = categories.find(c => c.id === categoryId);
-
+  async reorder(categoryId: number, newOrder: number, newParentId: number | null): Promise<void> {
+    const categoryToMove = await this.getById(categoryId);
     if (!categoryToMove) return;
 
-    // Remover a categoria da sua posição atual
-    const filteredCategories = categories.filter(c => c.id !== categoryId);
+    const oldSiblings = await this.getSubcategories(categoryToMove.parentId);
+    for (const sibling of oldSiblings) {
+      if (sibling.id !== categoryId && sibling.order > categoryToMove.order) {
+        await supabase
+          .from('categories')
+          .update({ order: sibling.order - 1 })
+          .eq('id', sibling.id);
+      }
+    }
 
-    // Ajustar a ordem dos irmãos antigos
-    filteredCategories
-      .filter(c => c.parentId === categoryToMove.parentId && c.order > categoryToMove.order)
-      .forEach(c => c.order--);
+    const newSiblings = await this.getSubcategories(newParentId);
+    for (const sibling of newSiblings) {
+      if (sibling.id !== categoryId && sibling.order >= newOrder) {
+        await supabase
+          .from('categories')
+          .update({ order: sibling.order + 1 })
+          .eq('id', sibling.id);
+      }
+    }
 
-    // Ajustar a ordem dos novos irmãos
-    filteredCategories
-      .filter(c => c.parentId === newParentId && c.order >= newOrder)
-      .forEach(c => c.order++);
-
-    // Atualizar a categoria com a nova ordem e pai
-    categoryToMove.order = newOrder;
-    categoryToMove.parentId = newParentId;
-
-    // Adicionar a categoria de volta na lista
-    filteredCategories.push(categoryToMove);
-
-    // Salvar e reordenar a lista completa
-    storageService.set(STORAGE_KEYS.CATEGORIES, filteredCategories.sort((a, b) => a.order - b.order));
+    await supabase
+      .from('categories')
+      .update({ order: newOrder, parent_id: newParentId })
+      .eq('id', categoryId);
   }
 
   // Obter todos os descendentes de uma categoria (incluindo ela mesma)
-  getDescendants(categoryId: number): Category[] {
-    const allCategories = this.getAll();
+  async getDescendants(categoryId: number): Promise<Category[]> {
+    const allCategories = await this.getAll();
     const descendants: Category[] = [];
     const queue: number[] = [categoryId];
 
@@ -190,11 +256,7 @@ class CategoriesService {
   }
 
   // Inicializar categorias padrão se não existirem
-  initialize(): void {
-    const existing = storageService.get<Category[]>(STORAGE_KEYS.CATEGORIES);
-    if (!existing || existing.length === 0) {
-      storageService.set(STORAGE_KEYS.CATEGORIES, [DEFAULT_CATEGORY]);
-    }
+  async initialize(): Promise<void> {
   }
 }
 
