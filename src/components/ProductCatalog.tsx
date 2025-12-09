@@ -6,9 +6,10 @@ import { clicksService } from '../services/clicks.service';
 import { bannersService } from '../services/banners.service';
 import { Product, Category, Banner } from '../types';
 import ProductModal from './ProductModal';
-import { getDiscountDetails } from '../utils/productUtils';
+import { getDiscountDetails, isLaunchValid } from '../utils/productUtils'; // Importar isLaunchValid
 import CountdownTimer from './CountdownTimer';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select'; // Importar componentes Select
+import NewArrivalsCarousel from './NewArrivalsCarousel'; // Importar o carrossel
 
 // SearchBar não é mais importado aqui, pois é renderizado no App.tsx
 
@@ -164,6 +165,9 @@ export default function ProductCatalog({ allProducts, categories, selectedCatego
 
   const currentBanner = visibleBanners[currentBannerIndex];
 
+  // Verifica se a categoria 'Todos' está selecionada para exibir o carrossel de lançamentos
+  const shouldShowLaunches = selectedCategory === 1;
+
   return (
     <section id="catalog" className="bg-white px-4"> {/* Removido py-16 md:py-24 */}
       <div className="max-w-7xl mx-auto">
@@ -233,6 +237,11 @@ export default function ProductCatalog({ allProducts, categories, selectedCatego
           </div>
         )}
 
+        {/* Carrossel de Lançamentos (Aparece abaixo dos banners) */}
+        {shouldShowLaunches && (
+          <NewArrivalsCarousel />
+        )}
+
         {/* Filtro de Ordenação */}
         <div className="flex justify-end mb-8">
           <Select onValueChange={(value: SortOption) => setSortOption(value)} value={sortOption}>
@@ -260,7 +269,7 @@ export default function ProductCatalog({ allProducts, categories, selectedCatego
             filteredProducts.map((product) => {
               const { originalPrice, discountedPrice, isDiscountActive, savingsPercentage, countdown, discountType } = getDiscountDetails(product);
               // Verifica se é um lançamento válido (ativo e não expirado)
-              const isLaunch = product.isLaunch && product.launchExpiresAt && new Date(product.launchExpiresAt) > new Date();
+              const isLaunch = isLaunchValid(product);
 
               return (
                 <div

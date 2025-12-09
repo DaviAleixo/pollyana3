@@ -5,6 +5,7 @@ import { Product } from '../types';
 import LaunchProductCard from './LaunchProductCard';
 import ProductModal from './ProductModal';
 import { clicksService } from '../services/clicks.service';
+import SectionTitle from './SectionTitle'; // NOVO IMPORT
 
 export default function NewArrivalsCarousel() {
   const [launches, setLaunches] = useState<Product[]>([]);
@@ -54,15 +55,13 @@ export default function NewArrivalsCarousel() {
     return null;
   }
 
-  // Para simular um carrossel "infinito" (duplicamos os itens)
-  const carouselItems = [...launches, ...launches];
+  // Usamos apenas os itens reais, sem duplicação
+  const carouselItems = launches;
 
   return (
     <section className="bg-gray-50 py-12 md:py-16 px-4">
       <div className="max-w-7xl mx-auto">
-        <h2 className="font-serif text-3xl md:text-4xl font-bold text-black mb-8 text-center">
-          LANÇAMENTOS DA LOJA
-        </h2>
+        <SectionTitle title="LANÇAMENTOS DA LOJA" className="mb-10" />
 
         <div className="relative">
           {/* Botões de navegação */}
@@ -87,9 +86,9 @@ export default function NewArrivalsCarousel() {
             className="flex overflow-x-scroll space-x-4 sm:space-x-6 pb-4 px-2 -mx-2 md:px-0 md:-mx-0 snap-x snap-mandatory scrollbar-hide"
             style={{ scrollBehavior: 'smooth' }}
           >
-            {carouselItems.map((product, index) => (
+            {carouselItems.map((product) => (
               <LaunchProductCard
-                key={`${product.id}-${index}`} // Chave única para a duplicação
+                key={product.id}
                 product={product}
                 onOpenModal={handleOpenModal}
               />

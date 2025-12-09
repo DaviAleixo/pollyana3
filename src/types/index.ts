@@ -47,7 +47,7 @@ export interface Product {
   // NOVAS PROPRIEDADES PARA LANÇAMENTOS
   isLaunch?: boolean;
   launchExpiresAt?: string; // ISO date string
-  launchOrder?: number; // Ordem de prioridade
+  // launchOrder?: number; // Ordem de prioridade REMOVIDO
 }
 
 export interface StockMovement {

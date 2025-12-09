@@ -91,8 +91,7 @@ function App() {
                   {/* SearchBar foi movida para Navbar */}
                 </div>
                 
-                {/* NOVO CARROSSEL DE LANÇAMENTOS - SÓ APARECE SE CATEGORIA FOR 'TODOS' (ID 1) */}
-                {selectedCategory === 1 && <NewArrivalsCarousel />}
+                {/* O carrossel de lançamentos agora é renderizado dentro do ProductCatalog */}
 
                 <ProductCatalog
                   allProducts={allProducts}

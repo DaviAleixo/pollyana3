@@ -39,10 +39,10 @@ export default function ProductFormNew() {
   const [discountValue, setDiscountValue] = useState<number>(0);
   const [discountExpiresAt, setDiscountExpiresAt] = useState<string>('');
 
-  // NOVOS ESTADOS PARA LANÇAMENTO
+  // ESTADOS PARA LANÇAMENTO
   const [isLaunch, setIsLaunch] = useState(false);
   const [launchExpiresAt, setLaunchExpiresAt] = useState<string>('');
-  const [launchOrder, setLaunchOrder] = useState<number>(0);
+  // launchOrder removido
 
   const [formData, setFormData] = useState({
     nome: '',
@@ -96,7 +96,7 @@ export default function ProductFormNew() {
         // Inicializar estados de lançamento
         setIsLaunch(product.isLaunch || false);
         setLaunchExpiresAt(product.launchExpiresAt || '');
-        setLaunchOrder(product.launchOrder || 0);
+        // launchOrder removido
 
         const productCategory = fetchedAllCategories.find(c => c.id === product.categoriaId);
         if (productCategory) {
@@ -441,7 +441,7 @@ export default function ProductFormNew() {
       // Dados de lançamento
       isLaunch: isLaunch,
       launchExpiresAt: isLaunch && launchExpiresAt ? launchExpiresAt : undefined,
-      launchOrder: isLaunch ? launchOrder : undefined,
+      // launchOrder removido
     };
 
     console.log('ProductFormNew.handleSubmit() - Product data being saved:', {
@@ -451,7 +451,7 @@ export default function ProductFormNew() {
       estoque: productData.estoque,
       isLaunch: productData.isLaunch,
       launchExpiresAt: productData.launchExpiresAt,
-      launchOrder: productData.launchOrder,
+      // launchOrder removido
       // ... other relevant fields
     });
 
@@ -901,20 +901,7 @@ export default function ProductFormNew() {
 
               {isLaunch && (
                 <>
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">
-                      Ordem de Prioridade (0 = Mais prioritário)
-                    </label>
-                    <input
-                      type="number"
-                      value={launchOrder}
-                      onChange={(e) => setLaunchOrder(parseInt(e.target.value) || 0)}
-                      min="0"
-                      className="w-full border border-gray-300 px-4 py-2 focus:outline-none focus:border-black"
-                      placeholder="0"
-                    />
-                  </div>
-
+                  {/* Ordem de Prioridade REMOVIDA */}
                   <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-2">
                       Data de Expiração (opcional)

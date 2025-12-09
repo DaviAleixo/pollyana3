@@ -37,21 +37,13 @@ class ProductsService {
     return true;
   }
 
-  // Obter produtos de lançamento válidos, ordenados por prioridade
+  // Obter produtos de lançamento válidos, ordenados por ID (mais recente primeiro)
   getLaunches(): Product[] {
     const allProducts = this.getAll();
     const validLaunches = allProducts.filter(this.isLaunchValid);
 
-    // Ordenar: prioridade (menor número primeiro), depois por ID (para estabilidade)
-    validLaunches.sort((a, b) => {
-      const orderA = a.launchOrder ?? Infinity;
-      const orderB = b.launchOrder ?? Infinity;
-
-      if (orderA !== orderB) {
-        return orderA - orderB;
-      }
-      return a.id - b.id;
-    });
+    // Ordenar por ID decrescente (assumindo que IDs maiores são mais recentes)
+    validLaunches.sort((a, b) => b.id - a.id);
 
     return validLaunches;
   }
