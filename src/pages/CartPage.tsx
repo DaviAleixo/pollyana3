@@ -1,0 +1,293 @@
+import { useState, useEffect, useCallback } from 'react';
+import { Link } from 'react-router-dom';
+import { Trash2, Minus, Plus, ArrowLeft, ShoppingBag, Truck, Store } from 'lucide-react'; // Importar Store icon
+import { cartService } from '../services/cart.service';
+import { shippingService } from '../services/shipping.service';
+import { CartItem, ShippingAddress, ShippingOption } from '../types';
+import CountdownTimer from '../components/CountdownTimer';
+import CepInput from '../components/CepInput';
+
+export default function CartPage() {
+  const [cartItems, setCartItems] = useState<CartItem[]>([]);
+  const [subtotal, setSubtotal] = useState(0);
+  const [totalSavings, setTotalSavings] = useState(0);
+  const [shippingAddress, setShippingAddress] = useState<ShippingAddress | null>(null);
+  const [shippingOptions, setShippingOptions] = useState<ShippingOption[]>([]);
+  const [selectedShippingOption, setSelectedShippingOption] = useState<ShippingOption | null>(null);
+  const [totalPrice, setTotalPrice] = useState(0);
+
+  const loadCart = useCallback(() => {
+    const items = cartService.getCartItems();
+    setCartItems(items);
+    const currentSubtotal = cartService.getTotalPrice();
+    setSubtotal(currentSubtotal);
+    setTotalSavings(cartService.getTotalSavings());
+
+    const currentShippingCost = selectedShippingOption && typeof selectedShippingOption.cost === 'number' ? selectedShippingOption.cost : 0;
+    setTotalPrice(currentSubtotal + currentShippingCost);
+  }, [selectedShippingOption]);
+
+  useEffect(() => {
+    loadCart();
+
+    window.addEventListener('storage', loadCart);
+
+    return () => {
+      window.removeEventListener('storage', loadCart);
+    };
+  }, [loadCart]);
+
+  useEffect(() => {
+    // Recalcular opções de frete sempre que o endereço mudar ou a página carregar
+    const options = shippingService.calculateShippingOptions(shippingAddress);
+    setShippingOptions(options);
+
+    // Tentar manter a opção selecionada se ela ainda existir, caso contrário, selecionar a primeira
+    if (selectedShippingOption && options.some(opt => opt.type === selectedShippingOption.type)) {
+      setSelectedShippingOption(options.find(opt => opt.type === selectedShippingOption.type) || null);
+    } else if (options.length > 0) {
+      setSelectedShippingOption(options[0]);
+    } else {
+      setSelectedShippingOption(null);
+    }
+  }, [shippingAddress]); // Depende apenas do shippingAddress
+
+  useEffect(() => {
+    const currentShippingCost = selectedShippingOption && typeof selectedShippingOption.cost === 'number' ? selectedShippingOption.cost : 0;
+    setTotalPrice(subtotal + currentShippingCost);
+  }, [subtotal, selectedShippingOption]);
+
+
+  const handleUpdateQuantity = (itemId: string, delta: number) => {
+    const item = cartItems.find(i => i.id === itemId);
+    if (item) {
+      cartService.updateItemQuantity(itemId, item.quantity + delta);
+    }
+  };
+
+  const handleRemoveItem = (itemId: string) => {
+    if (window.confirm('Deseja remover este item do carrinho?')) {
+      cartService.removeItem(itemId);
+    }
+  };
+
+  const handleFinalizeOrder = () => {
+    if (!selectedShippingOption) {
+      alert('Por favor, selecione uma opção de frete para finalizar o pedido.');
+      return;
+    }
+
+    // Se a opção for retirada na loja, não precisamos de endereço de entrega
+    if (selectedShippingOption.type !== 'store_pickup' && !shippingAddress) {
+      alert('Por favor, informe o CEP para entrega.');
+      return;
+    }
+
+    const whatsappMessage = cartService.generateWhatsAppMessage(shippingAddress, selectedShippingOption);
+    const phoneNumber = '5531982607426';
+    const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(whatsappMessage)}`;
+
+    window.open(whatsappUrl, '_blank');
+    cartService.clearCart();
+    setShippingAddress(null);
+    setSelectedShippingOption(null);
+  };
+
+  return (
+    <div className="min-h-screen bg-white py-16 px-4">
+      <div className="max-w-7xl mx-auto">
+        <div className="mb-8">
+          <Link to="/" className="flex items-center gap-2 text-gray-600 hover:text-black mb-4 transition-colors">
+            <ArrowLeft className="w-4 h-4" strokeWidth={1.5} />
+            Continuar Comprando
+          </Link>
+          <h1 className="font-serif text-4xl md:text-5xl font-bold text-black mb-4">
+            Seu Carrinho
+          </h1>
+          <p className="text-gray-600 text-lg">
+            Revise os itens e finalize seu pedido
+          </p>
+        </div>
+
+        {cartItems.length === 0 ? (
+          <div className="bg-white border border-gray-200 p-8 text-center rounded-lg shadow-md"> {/* Card arredondado */}
+            <p className="text-gray-600 text-xl mb-4">Seu carrinho está vazio.</p>
+            <Link
+              to="/"
+              className="inline-flex items-center gap-2 bg-black text-white px-6 py-3 hover:bg-gray-800 transition-colors font-medium rounded-md" // Botão arredondado
+            >
+              <ShoppingBag className="w-5 h-5" strokeWidth={1.5} />
+              Ver Produtos
+            </Link>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* Lista de Itens do Carrinho */}
+            <div className="lg:col-span-2 bg-white border border-gray-200 divide-y divide-gray-200 rounded-lg shadow-md"> {/* Card arredondado */}
+              {cartItems.map((item) => {
+                const itemSavings = item.originalPriceAtAddToCart - item.discountedPriceAtAddToCart;
+                const isItemDiscounted = item.originalPriceAtAddToCart > item.discountedPriceAtAddToCart;
+
+                return (
+                  <div key={item.id} className="flex flex-col sm:flex-row sm:items-center gap-4 p-4 sm:p-6">
+                    {/* Imagem */}
+                    <div className="w-20 h-20 sm:w-24 sm:h-24 flex-shrink-0 bg-gray-100 overflow-hidden rounded-md"> {/* Imagem arredondada */}
+                      <img
+                        src={item.selectedColorImage || 'https://via.placeholder.com/100x100?text=Sem+Imagem'}
+                        alt={item.productName}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+
+                    {/* Detalhes do Item */}
+                    <div className="flex-1 text-center sm:text-left">
+                      <h3 className="font-semibold text-lg text-black">{item.productName}</h3>
+                      <p className="text-sm text-gray-600">Cor: {item.selectedColorName}</p>
+                      <p className="text-sm text-gray-600">Tamanho: {item.selectedSize}</p>
+                      
+                      {isItemDiscounted ? (
+                        <>
+                          <p className="text-sm text-gray-500 line-through">
+                            De: R$ {item.originalPriceAtAddToCart.toFixed(2)}
+                          </p>
+                          <p className="font-bold text-red-600 mt-1">
+                            Por: R$ {item.discountedPriceAtAddToCart.toFixed(2)}
+                          </p>
+                          <p className="text-xs text-green-600 font-semibold">
+                            Economia: R$ {itemSavings.toFixed(2)}
+                          </p>
+                          {item.discountExpiresAtAtAddToCart && (
+                            <CountdownTimer
+                              expirationDate={item.discountExpiresAtAtAddToCart}
+                              className="text-xs text-red-500 font-medium mt-1"
+                            />
+                          )}
+                        </>
+                      ) : (
+                        <p className="font-bold text-black mt-1">R$ {item.productPrice.toFixed(2)}</p>
+                      )}
+                    </div>
+
+                    {/* Controles de Quantidade e Remover */}
+                    <div className="flex flex-col items-center sm:items-end gap-2 mt-4 sm:mt-0">
+                      <div className="flex items-center border border-gray-300 rounded-md"> {/* Controles de quantidade arredondados */}
+                        <button
+                          onClick={() => handleUpdateQuantity(item.id, -1)}
+                          className="p-2 hover:bg-gray-100 transition-colors rounded-l-md"
+                          disabled={item.quantity <= 1}
+                        >
+                          <Minus className="w-4 h-4 text-gray-700" strokeWidth={1.5} />
+                        </button>
+                        <span className="w-8 text-center py-2 border-x border-gray-300 text-sm">
+                          {item.quantity}
+                        </span>
+                        <button
+                          onClick={() => handleUpdateQuantity(item.id, 1)}
+                          className="p-2 hover:bg-gray-100 transition-colors rounded-r-md"
+                          disabled={item.quantity >= item.stockAvailable}
+                        >
+                          <Plus className="w-4 h-4 text-gray-700" strokeWidth={1.5} />
+                        </button>
+                      </div>
+                      <button
+                        onClick={() => handleRemoveItem(item.id)}
+                        className="text-red-600 hover:text-red-800 p-1 transition-colors rounded-full" // Botão de remover arredondado
+                        title="Remover item"
+                      >
+                        <Trash2 className="w-5 h-5" strokeWidth={1.5} />
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Resumo da Compra e Frete */}
+            <div className="bg-white border border-gray-200 p-6 h-fit lg:sticky lg:top-20 rounded-lg shadow-md"> {/* Card arredondado */}
+              <h2 className="font-serif text-2xl font-bold text-black mb-4">
+                Resumo do Pedido
+              </h2>
+              
+              {/* Seção de CEP e Frete */}
+              <div className="mb-6 pb-6 border-b border-gray-200">
+                <CepInput onAddressChange={setShippingAddress} className="mb-4" />
+
+                {shippingOptions.length > 0 && (
+                  <div className="space-y-3">
+                    <label className="block text-sm font-semibold text-gray-700">
+                      Opções de Frete
+                    </label>
+                    {shippingOptions.map(option => (
+                      <label key={option.type} className="flex items-center gap-3 cursor-pointer p-3 border border-gray-200 hover:bg-gray-50 transition-colors rounded-md">
+                        <input
+                          type="radio"
+                          name="shippingOption"
+                          checked={selectedShippingOption?.type === option.type}
+                          onChange={() => setSelectedShippingOption(option)}
+                          className="w-4 h-4 text-black focus:ring-black"
+                        />
+                        <div className="flex-1">
+                          <p className="font-medium text-gray-900">{option.label}</p>
+                          <p className="text-sm text-gray-600">
+                            {option.deliveryTime && <span>{option.deliveryTime} • </span>}
+                            <span className="font-semibold">R$ {typeof option.cost === 'number' ? option.cost.toFixed(2) : 'N/A'}</span>
+                          </p>
+                        </div>
+                        {option.type === 'store_pickup' ? (
+                          <Store className="w-5 h-5 text-gray-500" strokeWidth={1.5} />
+                        ) : (
+                          <Truck className="w-5 h-5 text-gray-500" strokeWidth={1.5} />
+                        )}
+                      </label>
+                    ))}
+                  </div>
+                )}
+                {shippingOptions.length === 0 && (
+                  <p className="text-sm text-gray-500 mt-4">
+                    Nenhuma opção de frete disponível.
+                  </p>
+                )}
+              </div>
+
+              {/* Detalhes do Total */}
+              <div className="space-y-2">
+                <div className="flex justify-between items-center">
+                  <p className="text-base text-gray-700">Subtotal:</p>
+                  <p className="text-base text-gray-700">R$ {subtotal.toFixed(2)}</p>
+                </div>
+                {totalSavings > 0 && (
+                  <div className="flex justify-between items-center">
+                    <p className="text-base text-green-600 font-semibold">Economia Total:</p>
+                    <p className="text-base text-green-600 font-semibold">- R$ {totalSavings.toFixed(2)}</p>
+                  </div>
+                )}
+                {selectedShippingOption && typeof selectedShippingOption.cost === 'number' && (
+                  <div className="flex justify-between items-center">
+                    <p className="text-base text-gray-700">Frete ({selectedShippingOption.label}):</p>
+                    <p className="text-base text-gray-700">R$ {selectedShippingOption.cost.toFixed(2)}</p>
+                  </div>
+                )}
+                <div className="flex justify-between items-center border-t border-gray-200 pt-4 mt-4">
+                  <p className="text-xl font-bold text-black">Total:</p>
+                  <p className="text-xl font-bold text-black">R$ {totalPrice.toFixed(2)}</p>
+                </div>
+              </div>
+
+              <button
+                onClick={handleFinalizeOrder}
+                disabled={!selectedShippingOption || cartItems.length === 0 || (selectedShippingOption.type !== 'store_pickup' && !shippingAddress)}
+                className="w-full bg-green-600 text-white px-6 py-3 mt-6 hover:bg-green-700 transition-colors font-medium flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed rounded-md" // Botão arredondado
+              >
+                <img src="/whatsapp-icon.svg" alt="WhatsApp" className="w-5 h-5" />
+                Finalizar Pedido no WhatsApp
+              </button>
+              <p className="text-xs text-gray-500 mt-3 text-center">
+                Você será redirecionado para o WhatsApp com os detalhes do seu pedido.
+              </p>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
