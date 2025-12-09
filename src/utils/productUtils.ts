@@ -20,6 +20,24 @@ export function isDiscountValid(product: Product): boolean {
 }
 
 /**
+ * Verifica se um produto é um lançamento válido (ativo, marcado como lançamento e não expirado).
+ * @param product O objeto Product.
+ * @returns true se o produto for um lançamento válido, false caso contrário.
+ */
+export function isLaunchValid(product: Product): boolean {
+  if (!product.isLaunch || !product.ativo || !product.visivel) {
+    return false;
+  }
+  if (product.launchExpiresAt) {
+    const expirationDate = new Date(product.launchExpiresAt);
+    if (expirationDate < new Date()) {
+      return false; // Lançamento expirado
+    }
+  }
+  return true;
+}
+
+/**
  * Calcula o preço com desconto de um produto.
  * @param product O objeto Product.
  * @returns O preço com desconto ou o preço original se não houver desconto válido.
