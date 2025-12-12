@@ -6,17 +6,18 @@ import { supabase } from '../lib/supabase';
 class CategoriesService {
 
   // Converte do banco → aplicação
-  private mapFromDB(db: any): Category {
-    return {
-      id: db.id,
-      nome: db.nome,
-      visivel: db.visivel,
-      parentId: db.parent_id ?? null,
-      slug: db.slug,
-      description: db.description,
-      order: db.order ?? 0,A
-    };
-  }
+private mapFromDB(db: any): Category {
+  return {
+    id: db.id,
+    nome: db.nome,
+    visivel: db.visivel,
+    parentId: db.parent_id ?? null,
+    slug: db.slug,
+    description: db.description,
+    order: db.order ?? 0
+  };
+}
+
 
   // Converte da aplicação → banco
   private mapToDB(category: Partial<Category>): any {
