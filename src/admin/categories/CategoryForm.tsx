@@ -20,18 +20,20 @@ export default function CategoryForm() {
   const [allCategories, setAllCategories] = useState<Category[]>([]);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
-  useEffect(() => {
-    const fetchedCategories = categoriesService.getAll();
+ useEffect(() => {
+  async function loadData() {
+    const fetchedCategories = await categoriesService.getAll();
     setAllCategories(fetchedCategories);
 
     if (isEditing && id) {
-      const category = categoriesService.getById(parseInt(id));
+      const category = await categoriesService.getById(parseInt(id));
       if (category) {
         if (category.id === 1) {
           alert('A categoria "Todos" não pode ser editada.');
           navigate('/admin/categorias');
           return;
         }
+
         setFormData({
           nome: category.nome,
           visivel: category.visivel,
@@ -44,13 +46,18 @@ export default function CategoryForm() {
         navigate('/admin/categorias');
       }
     } else {
-      // Preencher parentId se vier da URL (ex: ao criar subcategoria)
       const parentIdFromUrl = searchParams.get('parentId');
       if (parentIdFromUrl) {
-        setFormData(prev => ({ ...prev, parentId: parseInt(parentIdFromUrl, 10) }));
+        setFormData(prev => ({
+          ...prev,
+          parentId: parseInt(parentIdFromUrl, 10)
+        }));
       }
     }
-  }, [id, isEditing, navigate, searchParams]);
+  }
+
+  loadData();
+}, [id, isEditing, navigate, searchParams]);
 
   // Gerar slug automaticamente ao mudar o nome
   useEffect(() => {
