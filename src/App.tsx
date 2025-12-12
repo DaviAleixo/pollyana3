@@ -4,7 +4,6 @@ import ProductCatalog from './components/ProductCatalog';
 import Benefits from './components/Benefits';
 import Footer from './components/Footer';
 import Navbar from './components/Navbar';
-import Hero from './components/Hero';
 import Sidebar from './components/Sidebar';
 import CategoryNavbar from './components/CategoryNavbar';
 import CartPage from './pages/CartPage';
@@ -89,7 +88,7 @@ function App() {
                 selectedCategoryId={selectedCategory}
               />
               <div className="pt-[136px] lg:pt-28">
-                <Hero />
+                
                 <ProductCatalog
                   allProducts={allProducts}
                   categories={categories}
