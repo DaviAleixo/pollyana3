@@ -14,8 +14,12 @@ export default function BannersList() {
   }, []);
 
   const loadData = () => {
-    // Carrega todos os banners (não apenas os visíveis) para gerenciamento
-    setBanners(bannersService.getAll(false));
+    const data = bannersService.getAll(false);
+
+    // 🔥 Garante que sempre será exibido na ordem correta
+    const sorted = [...data].sort((a, b) => a.order - b.order);
+
+    setBanners(sorted);
   };
 
   const getLinkDescription = (banner: Banner) => {
@@ -48,7 +52,7 @@ export default function BannersList() {
   };
 
   const handleMoveBanner = (id: number, direction: 'up' | 'down') => {
-    const currentBanners = bannersService.getAll(false); // Get all banners to reorder
+    const currentBanners = [...banners];
     const index = currentBanners.findIndex(b => b.id === id);
 
     if (index === -1) return;
@@ -56,14 +60,14 @@ export default function BannersList() {
     const newIndex = direction === 'up' ? index - 1 : index + 1;
 
     if (newIndex >= 0 && newIndex < currentBanners.length) {
-      // Swap orders
       const bannerToMove = currentBanners[index];
       const otherBanner = currentBanners[newIndex];
 
+      // Troca a ordem no banco/localStorage
       bannersService.update(bannerToMove.id, { order: otherBanner.order });
       bannersService.update(otherBanner.id, { order: bannerToMove.order });
-      
-      loadData(); // Reload data to reflect new order
+
+      loadData(); // Recarrega já ordenado
     }
   };
 
@@ -126,35 +130,39 @@ export default function BannersList() {
                         className="w-24 h-12 object-cover"
                       />
                     </td>
+
                     <td className="px-6 py-4">
                       <p className="font-medium text-gray-900">
                         {banner.textOverlay || '-'}
                       </p>
                     </td>
+
                     <td className="px-6 py-4 text-gray-700">
                       {getLinkDescription(banner)}
                     </td>
+
                     <td className="px-6 py-4 text-center">
                       <div className="flex items-center justify-center gap-1">
                         <button
                           onClick={() => handleMoveBanner(banner.id, 'up')}
                           disabled={index === 0}
-                          className="p-1 text-gray-500 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
-                          title="Mover para cima"
+                          className="p-1 text-gray-500 hover:bg-gray-100 disabled:opacity-50"
                         >
                           <ArrowUp className="w-4 h-4" />
                         </button>
+
                         <span className="font-semibold">{banner.order}</span>
+
                         <button
                           onClick={() => handleMoveBanner(banner.id, 'down')}
                           disabled={index === banners.length - 1}
-                          className="p-1 text-gray-500 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
-                          title="Mover para baixo"
+                          className="p-1 text-gray-500 hover:bg-gray-100 disabled:opacity-50"
                         >
                           <ArrowDown className="w-4 h-4" />
                         </button>
                       </div>
                     </td>
+
                     <td className="px-6 py-4 text-center">
                       <button
                         onClick={() => handleToggleVisibility(banner.id)}
@@ -163,28 +171,23 @@ export default function BannersList() {
                             ? 'text-green-600 hover:bg-green-50'
                             : 'text-gray-400 hover:bg-gray-50'
                         }`}
-                        title={banner.isVisible ? 'Ocultar' : 'Mostrar'}
                       >
-                        {banner.isVisible ? (
-                          <Eye className="w-5 h-5" />
-                        ) : (
-                          <EyeOff className="w-5 h-5" />
-                        )}
+                        {banner.isVisible ? <Eye className="w-5 h-5" /> : <EyeOff className="w-5 h-5" />}
                       </button>
                     </td>
+
                     <td className="px-6 py-4">
                       <div className="flex items-center justify-end gap-2">
                         <Link
                           to={`/admin/banners/editar/${banner.id}`}
-                          className="p-2 text-gray-600 hover:bg-gray-100 transition-colors"
-                          title="Editar"
+                          className="p-2 text-gray-600 hover:bg-gray-100"
                         >
                           <Edit className="w-5 h-5" />
                         </Link>
+
                         <button
                           onClick={() => handleDelete(banner.id, banner.textOverlay)}
-                          className="p-2 text-red-600 hover:bg-red-50 transition-colors"
-                          title="Excluir"
+                          className="p-2 text-red-600 hover:bg-red-50"
                         >
                           <Trash2 className="w-5 h-5" />
                         </button>
