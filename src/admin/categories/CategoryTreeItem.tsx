@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Edit, Trash2, Eye, EyeOff, ChevronRight, ChevronDown, Plus, ArrowUp, ArrowDown } from 'lucide-react';
 import { Category } from '../../types';
@@ -21,23 +21,40 @@ const CategoryTreeItem: React.FC<CategoryTreeItemProps> = ({
   onMoveCategory,
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
+  const [productCount, setProductCount] = useState(0);
+  
   const subcategories = allCategories
     .filter(cat => cat.parentId === category.id)
     .sort((a, b) => a.order - b.order);
 
-  const getProductCount = (categoryId: number): number => {
-    const descendants = categoriesService.getDescendants(categoryId);
-    const descendantIds = descendants.map(d => d.id);
-    return productsService.getAll().filter(p => descendantIds.includes(p.categoriaId)).length;
-  };
+  // Carregar contagem de produtos de forma assíncrona
+  useEffect(() => {
+    const loadProductCount = async () => {
+      try {
+        const descendants = await categoriesService.getDescendants(category.id);
+        const validDescendants = Array.isArray(descendants) ? descendants : [];
+        const descendantIds = validDescendants.map(d => d.id);
+        
+        const allProducts = await productsService.getAll();
+        const validProducts = Array.isArray(allProducts) ? allProducts : [];
+        
+        const count = validProducts.filter(p => descendantIds.includes(p.categoriaId)).length;
+        setProductCount(count);
+      } catch (error) {
+        console.error('Erro ao carregar contagem de produtos:', error);
+        setProductCount(0);
+      }
+    };
 
-  const handleDelete = (id: number, nome: string) => {
+    loadProductCount();
+  }, [category.id]);
+
+  const handleDelete = async (id: number, nome: string) => {
     if (id === 1) {
       alert('A categoria "Todos" não pode ser excluída.');
       return;
     }
 
-    const productCount = getProductCount(id);
     const childrenCount = subcategories.length;
 
     let message = `Deseja realmente excluir a categoria "${nome}"?`;
@@ -49,14 +66,24 @@ const CategoryTreeItem: React.FC<CategoryTreeItemProps> = ({
     }
 
     if (window.confirm(message)) {
-      categoriesService.delete(id);
-      onCategoryChange();
+      try {
+        await categoriesService.delete(id);
+        onCategoryChange();
+      } catch (error) {
+        console.error('Erro ao excluir categoria:', error);
+        alert('Erro ao excluir categoria');
+      }
     }
   };
 
-  const handleToggleVisible = (id: number) => {
-    categoriesService.update(id, { visivel: !category.visivel });
-    onCategoryChange();
+  const handleToggleVisible = async (id: number) => {
+    try {
+      await categoriesService.update(id, { visivel: !category.visivel });
+      onCategoryChange();
+    } catch (error) {
+      console.error('Erro ao alterar visibilidade:', error);
+      alert('Erro ao alterar visibilidade da categoria');
+    }
   };
 
   const handleMoveUp = () => {
@@ -85,7 +112,6 @@ const CategoryTreeItem: React.FC<CategoryTreeItemProps> = ({
     }
   };
 
-  const productCount = getProductCount(category.id);
   const hasChildren = subcategories.length > 0;
 
   return (
@@ -130,7 +156,7 @@ const CategoryTreeItem: React.FC<CategoryTreeItemProps> = ({
                 : 'text-gray-400 hover:bg-gray-50'
             }`}
             title={category.visivel ? 'Ocultar' : 'Mostrar'}
-            disabled={category.id === 1} // Não pode desativar a categoria "Todos"
+            disabled={category.id === 1}
           >
             {category.visivel ? (
               <Eye className="w-5 h-5" />
@@ -147,7 +173,7 @@ const CategoryTreeItem: React.FC<CategoryTreeItemProps> = ({
               <>
                 <button
                   onClick={handleMoveUp}
-                  disabled={category.order === 0} // Desabilitar se for o primeiro
+                  disabled={category.order === 0}
                   className="p-2 text-gray-500 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
                   title="Mover para cima"
                 >
@@ -155,7 +181,7 @@ const CategoryTreeItem: React.FC<CategoryTreeItemProps> = ({
                 </button>
                 <button
                   onClick={handleMoveDown}
-                  disabled={category.order === subcategories.length - 1 && !hasChildren} // Desabilitar se for o último
+                  disabled={category.order === subcategories.length - 1 && !hasChildren}
                   className="p-2 text-gray-500 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
                   title="Mover para baixo"
                 >
