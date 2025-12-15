@@ -10,47 +10,64 @@ export default function Reports() {
   const [productsWithStats, setProductsWithStats] = useState<ProductWithStats[]>([]);
   const [totalClicks, setTotalClicks] = useState(0);
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     loadData();
   }, [sortOrder]);
 
   const loadData = async () => {
-    // 🔥 Agora é assíncrono
-    const products = await productsService.getAll();
-    const clicks = clicksService.getAll();
+    setLoading(true);
+    try {
+      const products = await productsService.getAll();
+      const clicks = await clicksService.getAll(); // 🔥 Adicionado await aqui
 
-    // Garantir que products seja array
-    const safeProducts = Array.isArray(products) ? products : [];
+      // Garantir que products seja array
+      const safeProducts = Array.isArray(products) ? products : [];
 
-    // Combinar produtos com estatísticas de cliques
-    const withStats: ProductWithStats[] = safeProducts.map((product) => {
-      const clickCount = clicks[product.id]?.clicks || 0;
+      // Combinar produtos com estatísticas de cliques
+      const withStats: ProductWithStats[] = safeProducts.map((product) => {
+        const clickCount = clicks[product.id]?.clicks || 0;
 
-      return {
-        ...product,
-        totalClicks: clickCount,
-        categoriaNome: '',
-      };
-    });
+        return {
+          ...product,
+          totalClicks: clickCount,
+          categoriaNome: '',
+        };
+      });
 
-    // Ordenar por número de cliques
-    withStats.sort((a, b) =>
-      sortOrder === 'desc'
-        ? b.totalClicks - a.totalClicks
-        : a.totalClicks - b.totalClicks
-    );
+      // Ordenar por número de cliques
+      withStats.sort((a, b) =>
+        sortOrder === 'desc'
+          ? b.totalClicks - a.totalClicks
+          : a.totalClicks - b.totalClicks
+      );
 
-    setProductsWithStats(withStats);
+      setProductsWithStats(withStats);
 
-    // Calcular total de cliques
-    const total = withStats.reduce((sum, p) => sum + p.totalClicks, 0);
-    setTotalClicks(total);
+      // Calcular total de cliques
+      const total = withStats.reduce((sum, p) => sum + p.totalClicks, 0);
+      setTotalClicks(total);
+    } catch (error) {
+      console.error('Erro ao carregar dados do relatório:', error);
+      setProductsWithStats([]);
+      setTotalClicks(0);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const toggleSort = () => {
     setSortOrder(sortOrder === 'desc' ? 'asc' : 'desc');
   };
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-black"></div>
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -144,7 +161,7 @@ export default function Reports() {
       <div className="mt-6 bg-gray-50 border border-gray-200 p-4">
         <p className="text-xs sm:text-sm text-gray-600">
           <strong>Nota:</strong> Os cliques são registrados quando um usuário
-          clica no botão "Comprar no WhatsApp".
+          clica no botão "Comprar no WhatsApp" (na modal) ou "Finalizar Pedido no WhatsApp" (no carrinho).
         </p>
       </div>
     </div>

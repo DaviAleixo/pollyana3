@@ -15,25 +15,40 @@ export default function Dashboard() {
     totalCategories: 0,
     totalClicks: 0,
   });
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Carregar estatísticas
-    const products = productsService.getAll();
-    const visibleProducts = productsService.getVisible();
-    const categories = categoriesService.getAll();
-    const clicks = clicksService.getAll();
+    const loadStats = async () => {
+      setLoading(true);
+      try {
+        // Carregar estatísticas de forma assíncrona
+        const [products, visibleProducts, categories, clicks] = await Promise.all([
+          productsService.getAll(),
+          productsService.getVisible(),
+          categoriesService.getAll(),
+          clicksService.getAll(), // Retorna { productId: { clicks: N } }
+        ]);
 
-    const totalClicks = Object.values(clicks).reduce(
-      (sum, item) => sum + item.clicks,
-      0
-    );
+        const totalClicks = Object.values(clicks).reduce(
+          (sum, item) => sum + item.clicks,
+          0
+        );
 
-    setStats({
-      totalProducts: products.length,
-      visibleProducts: visibleProducts.length,
-      totalCategories: categories.length,
-      totalClicks,
-    });
+        setStats({
+          totalProducts: Array.isArray(products) ? products.length : 0,
+          visibleProducts: Array.isArray(visibleProducts) ? visibleProducts.length : 0,
+          totalCategories: Array.isArray(categories) ? categories.length : 0,
+          totalClicks,
+        });
+      } catch (error) {
+        console.error('Erro ao carregar estatísticas do dashboard:', error);
+        setStats({ totalProducts: 0, visibleProducts: 0, totalCategories: 0, totalClicks: 0 });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadStats();
   }, []);
 
   // Cards de estatísticas
@@ -67,6 +82,14 @@ export default function Dashboard() {
       color: 'bg-gray-500',
     },
   ];
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-black"></div>
+      </div>
+    );
+  }
 
   return (
     <div>
