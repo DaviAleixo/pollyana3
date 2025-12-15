@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Upload, X, Image as ImageIcon } from 'lucide-react';
+import { ArrowLeft, Upload, X } from 'lucide-react';
 import { bannersService } from '../../services/banners.service';
 import { productsService } from '../../services/products.service';
 import { categoriesService } from '../../services/categories.service';
@@ -15,27 +15,34 @@ export default function BannerForm() {
   const [formData, setFormData] = useState<Omit<Banner, 'id'>>({
     imageUrl: '',
     textOverlay: '',
-    isVisible: true, // Default to visible
-    order: 0, // Will be set on load/create by service
+    isVisible: true,
+    order: 0,
     linkType: 'informational',
   });
-  const [imagePreview, setImagePreview] = useState<string>('');
+
+  const [imagePreview, setImagePreview] = useState('');
   const [imageUploadLoading, setImageUploadLoading] = useState(false);
+
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
+
   const [searchTermProduct, setSearchTermProduct] = useState('');
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
   const [showProductDropdown, setShowProductDropdown] = useState(false);
 
   useEffect(() => {
-    setProducts(productsService.getAll());
-    setCategories(categoriesService.getAll());
+    const productsResult = productsService.getAll();
+    const categoriesResult = categoriesService.getAll();
+
+    setProducts(Array.isArray(productsResult) ? productsResult : []);
+    setCategories(Array.isArray(categoriesResult) ? categoriesResult : []);
 
     if (isEditing && id) {
       const banner = bannersService.getById(parseInt(id));
       if (banner) {
         setFormData(banner);
         setImagePreview(banner.imageUrl);
+
         if (banner.linkType === 'product' && banner.linkedProductId) {
           const product = productsService.getById(banner.linkedProductId);
           setSearchTermProduct(product?.nome || '');
@@ -44,26 +51,39 @@ export default function BannerForm() {
         navigate('/admin/banners');
       }
     } else {
-      // For new banners, the order will be set by the service
-      setFormData(prev => ({ ...prev, order: bannersService.getAll(false).length + 1 }));
+      setFormData(prev => ({
+        ...prev,
+        order: bannersService.getAll(false).length + 1,
+      }));
     }
   }, [id, isEditing, navigate]);
 
   useEffect(() => {
     if (searchTermProduct.length > 0) {
       setFilteredProducts(
-        products.filter(p => p.nome.toLowerCase().includes(searchTermProduct.toLowerCase()))
+        Array.isArray(products)
+          ? products.filter(p =>
+              p.nome.toLowerCase().includes(searchTermProduct.toLowerCase())
+            )
+          : []
       );
     } else {
       setFilteredProducts([]);
     }
   }, [searchTermProduct, products]);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+  ) => {
     const { name, value, type, checked } = e.target;
-    setFormData((prev) => ({
+    setFormData(prev => ({
       ...prev,
-      [name]: type === 'checkbox' ? checked : (type === 'number' ? parseInt(value, 10) || 0 : value),
+      [name]:
+        type === 'checkbox'
+          ? checked
+          : type === 'number'
+          ? parseInt(value, 10) || 0
+          : value,
     }));
   };
 
@@ -76,16 +96,19 @@ export default function BannerForm() {
       return;
     }
 
-    if (!validateFileSize(file, 10)) { // Allow up to 10MB for banners
+    if (!validateFileSize(file, 10)) {
       alert('Arquivo muito grande. Tamanho máximo: 10MB');
       return;
     }
 
     setImageUploadLoading(true);
     try {
-      // Redimensionar para uma largura máxima de 1920px, mantendo a proporção
-      const resizedImage = await resizeImage(file, { maxWidth: 1920, maxHeight: 1920, quality: 0.8 });
-      setFormData((prev) => ({ ...prev, imageUrl: resizedImage }));
+      const resizedImage = await resizeImage(file, {
+        maxWidth: 1920,
+        maxHeight: 1920,
+        quality: 0.8,
+      });
+      setFormData(prev => ({ ...prev, imageUrl: resizedImage }));
       setImagePreview(resizedImage);
     } catch (error) {
       console.error('Erro ao processar imagem do banner:', error);
@@ -96,13 +119,13 @@ export default function BannerForm() {
   };
 
   const handleRemoveImage = () => {
-    setFormData((prev) => ({ ...prev, imageUrl: '' }));
+    setFormData(prev => ({ ...prev, imageUrl: '' }));
     setImagePreview('');
   };
 
   const handleLinkTypeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const newLinkType = e.target.value as BannerLinkType;
-    setFormData((prev) => ({
+    setFormData(prev => ({
       ...prev,
       linkType: newLinkType,
       linkedProductId: undefined,
@@ -113,7 +136,7 @@ export default function BannerForm() {
   };
 
   const handleSelectProduct = (product: Product) => {
-    setFormData((prev) => ({ ...prev, linkedProductId: product.id }));
+    setFormData(prev => ({ ...prev, linkedProductId: product.id }));
     setSearchTermProduct(product.nome);
     setShowProductDropdown(false);
   };
@@ -130,11 +153,16 @@ export default function BannerForm() {
       alert('Selecione um produto para o banner.');
       return;
     }
+
     if (formData.linkType === 'category' && !formData.linkedCategoryId) {
       alert('Selecione uma categoria para o banner.');
       return;
     }
-    if (formData.linkType === 'external' && (!formData.externalUrl || !/^https?:\/\/.+/.test(formData.externalUrl))) {
+
+    if (
+      formData.linkType === 'external' &&
+      (!formData.externalUrl || !/^https?:\/\/.+/.test(formData.externalUrl))
+    ) {
       alert('Insira uma URL externa válida (começando com http:// ou https://).');
       return;
     }
@@ -257,10 +285,10 @@ export default function BannerForm() {
                 onChange={(e) => {
                   setSearchTermProduct(e.target.value);
                   setShowProductDropdown(true);
-                  setFormData(prev => ({ ...prev, linkedProductId: undefined })); // Clear selected product on type
+                  setFormData(prev => ({ ...prev, linkedProductId: undefined }));
                 }}
                 onFocus={() => setShowProductDropdown(true)}
-                onBlur={() => setTimeout(() => setShowProductDropdown(false), 100)} // Delay to allow click
+                onBlur={() => setTimeout(() => setShowProductDropdown(false), 100)}
                 className="w-full border border-gray-300 px-4 py-2 focus:outline-none focus:border-black"
                 placeholder="Buscar produto..."
               />
@@ -269,7 +297,7 @@ export default function BannerForm() {
                   {filteredProducts.map(product => (
                     <li
                       key={product.id}
-                      onMouseDown={() => handleSelectProduct(product)} // Use onMouseDown to trigger before onBlur
+                      onMouseDown={() => handleSelectProduct(product)}
                       className="px-4 py-2 cursor-pointer hover:bg-gray-100 text-sm"
                     >
                       {product.nome} (R$ {product.preco.toFixed(2)})
@@ -278,7 +306,9 @@ export default function BannerForm() {
                 </ul>
               )}
               {formData.linkedProductId && searchTermProduct && (
-                <p className="text-xs text-gray-500 mt-1">Produto selecionado: {searchTermProduct}</p>
+                <p className="text-xs text-gray-500 mt-1">
+                  Produto selecionado: {searchTermProduct}
+                </p>
               )}
             </div>
           )}
@@ -290,8 +320,13 @@ export default function BannerForm() {
               </label>
               <select
                 name="linkedCategoryId"
-                value={formData.linkedCategoryId || ''} // Use empty string for no selection
-                onChange={(e) => setFormData(prev => ({ ...prev, linkedCategoryId: parseInt(e.target.value, 10) || undefined }))}
+                value={formData.linkedCategoryId || ''}
+                onChange={(e) =>
+                  setFormData(prev => ({
+                    ...prev,
+                    linkedCategoryId: parseInt(e.target.value, 10) || undefined,
+                  }))
+                }
                 className="w-full border border-gray-300 px-4 py-2 focus:outline-none focus:border-black"
                 required
               >
