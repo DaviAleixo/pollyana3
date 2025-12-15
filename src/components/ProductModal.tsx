@@ -22,21 +22,15 @@ export default function ProductModal({ product, isOpen, onClose, onAddToCart }: 
 
   const { originalPrice, discountedPrice, isDiscountActive, savingsAmount, savingsPercentage, countdown, discountType } = getDiscountDetails(product);
 
-  // 1. Filtrar variantes que têm estoque > 0
   const availableVariants = product.variants?.filter(v => v.estoque > 0) || [];
-  
-  // 2. Cores disponíveis (baseado em variantes com estoque)
-  const availableColorsNames = Array.from(new Set(availableVariants.map(v => v.cor)));
-  const availableColors = product.cores?.filter(c => availableColorsNames.includes(c.nome)) || [];
+  const availableColors = Array.from(new Set(availableVariants.map(v => v.cor)));
 
-  // 3. Tamanhos disponíveis para a cor selecionada
   const availableSizes = selectedColor
-    ? Array.from(new Set(availableVariants.filter(v => v.cor === selectedColor.nome).map(v => v.tamanho)))
+    ? Array.from(new Set(product.variants?.filter(v => v.cor === selectedColor.nome).map(v => v.tamanho)))
     : [];
 
-  // 4. Variante selecionada e estoque
   const selectedVariant = selectedColor && selectedSize
-    ? availableVariants.find(v => v.cor === selectedColor.nome && v.tamanho === selectedSize)
+    ? product.variants?.find(v => v.cor === selectedColor.nome && v.tamanho === selectedSize)
     : null;
 
   const currentStock = selectedVariant?.estoque || 0;
@@ -53,41 +47,50 @@ export default function ProductModal({ product, isOpen, onClose, onAddToCart }: 
 
       // Tenta pré-selecionar a primeira cor disponível
       if (availableColors.length > 0) {
-        const firstColorConfig = availableColors[0];
-        handleColorSelect(firstColorConfig, true); // Passa true para forçar a pré-seleção de tamanho
+        const firstAvailableColorName = availableColors[0];
+        const firstColorConfig = product.cores?.find(c => c.nome === firstAvailableColorName);
+        
+        if (firstColorConfig) {
+          setSelectedColor(firstColorConfig);
+          if (firstColorConfig.imagem) {
+            setCurrentImage(firstColorConfig.imagem);
+          } else {
+            setCurrentImage(product.imagem);
+          }
+        }
       }
     }
-  }, [isOpen, product.id]);
+  }, [isOpen, product.id]); // Depende apenas do ID do produto para evitar loops
 
   // Efeito para resetar a quantidade se o estoque mudar (ex: ao mudar cor/tamanho)
   useEffect(() => {
+    if (quantity > currentStock) {
+      setQuantity(Math.max(1, currentStock));
+    }
     if (currentStock === 0) {
       setQuantity(0);
     } else if (quantity === 0 && currentStock > 0) {
       setQuantity(1);
-    } else if (quantity > currentStock) {
-      setQuantity(currentStock);
     }
   }, [currentStock]);
 
 
   if (!isOpen) return null;
 
-  const handleColorSelect = (colorConfig: ProductColor, forceSizeSelection: boolean = false) => {
+  const handleColorSelect = (colorConfig: ProductColor) => {
     setSelectedColor(colorConfig);
     setSelectedSize('');
 
-    // Filtra tamanhos disponíveis para a nova cor (apenas aqueles com estoque)
-    const sizesForNewColor = availableVariants
-      .filter(v => v.cor === colorConfig.nome)
-      .map(v => v.tamanho);
+    // Filtra tamanhos disponíveis para a nova cor
+    const sizesForNewColor = product.variants
+      ?.filter(v => v.cor === colorConfig.nome && v.estoque > 0)
+      .map(v => v.tamanho) || [];
 
     // Se houver apenas um tamanho disponível, pré-seleciona
-    if (sizesForNewColor.length === 1 || forceSizeSelection) {
-      setSelectedSize(sizesForNewColor[0] || '');
+    if (sizesForNewColor.length === 1) {
+      setSelectedSize(sizesForNewColor[0]);
     }
 
-    // Atualiza a imagem
     if (colorConfig.imagem) {
       setCurrentImage(colorConfig.imagem);
     } else {
@@ -190,7 +193,7 @@ export default function ProductModal({ product, isOpen, onClose, onAddToCart }: 
                   Selecione a Cor *
                 </label>
                 <div className="flex flex-wrap gap-3">
-                  {availableColors.map((colorConfig) => (
+                  {product.cores?.filter(c => availableColors.includes(c.nome)).map((colorConfig) => (
                     <button
                       key={colorConfig.nome}
                       onClick={() => handleColorSelect(colorConfig)}
