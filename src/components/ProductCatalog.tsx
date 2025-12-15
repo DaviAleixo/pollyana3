@@ -257,8 +257,8 @@ export default function ProductCatalog({ allProducts, categories, selectedCatego
           </div>
         )}
 
-        {/* Filtro de Ordenação (Desktop Only) */}
-        <div className="hidden lg:flex justify-end mb-8 mt-8">
+        {/* Filtro de Ordenação (REMOVIDO DAQUI) */}
+        {/* <div className="hidden lg:flex justify-end mb-8 mt-8">
           <Select onValueChange={(value: SortOption) => onSortChange(value)} value={sortOption}>
             <SelectTrigger className="w-[180px]">
               <SelectValue placeholder="Ordenar por" />
@@ -270,7 +270,7 @@ export default function ProductCatalog({ allProducts, categories, selectedCatego
               <SelectItem value="alpha_asc">Nome: A-Z</SelectItem>
             </SelectContent>
           </Select>
-        </div>
+        </div> */}
 
         {/* Grid de produtos - padronizado e responsivo */}
         <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
