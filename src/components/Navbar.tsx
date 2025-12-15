@@ -66,14 +66,26 @@ export default function Navbar({ onMenuToggle, searchTerm, onSearchTermChange, o
             />
           </div>
 
-          <Link to="/carrinho" className="relative p-2 hover:bg-gray-100 rounded-full transition-colors flex-shrink-0" aria-label="Ver Carrinho" data-testid="link-cart">
-            <ShoppingBag className="w-6 h-6 text-black" strokeWidth={1.5} />
-            {totalItemsInCart > 0 && (
-              <span className="absolute -top-1 -right-1 bg-black text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center animate-bounce-once" data-testid="badge-cart-count">
-                {totalItemsInCart}
-              </span>
-            )}
-          </Link>
+          {/* Ícones de Ação (Desktop) */}
+          <div className="flex items-center gap-2 flex-shrink-0">
+            {/* Botão de Filtro (Desktop Only) */}
+            <button
+              onClick={onFilterToggle}
+              className="p-2 hover:bg-gray-100 rounded-full transition-colors hidden lg:block"
+              aria-label="Abrir filtros de ordenação"
+            >
+              <Filter className="w-6 h-6 text-black" strokeWidth={1.5} />
+            </button>
+
+            <Link to="/carrinho" className="relative p-2 hover:bg-gray-100 rounded-full transition-colors" aria-label="Ver Carrinho" data-testid="link-cart">
+              <ShoppingBag className="w-6 h-6 text-black" strokeWidth={1.5} />
+              {totalItemsInCart > 0 && (
+                <span className="absolute -top-1 -right-1 bg-black text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center animate-bounce-once" data-testid="badge-cart-count">
+                  {totalItemsInCart}
+                </span>
+              )}
+            </Link>
+          </div>
         </div>
 
         {/* Mobile Search Bar and Filter Button */}

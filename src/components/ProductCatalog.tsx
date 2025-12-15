@@ -115,11 +115,10 @@ export default function ProductCatalog({ allProducts, categories, selectedCatego
     }
     // 'default' não aplica ordenação adicional, mantendo a ordem original após os filtros.
 
-      // 4. Se estiver na categoria "Todos" e houver lançamentos, remover produtos de lançamento do grid
-      // para evitar duplicação (eles aparecem no carrossel de lançamentos)
-      if (selectedCategory === 1 && searchTerm === '') {
-        sortedProducts = sortedProducts.filter(product => !isLaunchValid(product));
-      }
+      // 4. Se estiver na categoria "Todos" e houver lançamentos, NÃO remover produtos de lançamento do grid.
+      // if (selectedCategory === 1 && searchTerm === '') {
+      //   sortedProducts = sortedProducts.filter(product => !isLaunchValid(product));
+      // }
 
       setFilteredProducts(sortedProducts);
     };
