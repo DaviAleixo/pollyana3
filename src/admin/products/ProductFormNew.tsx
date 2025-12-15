@@ -78,22 +78,17 @@ export default function ProductFormNew() {
 useEffect(() => {
   const loadData = async () => {
     try {
+      // ✅ CORRETO: await nas chamadas assíncronas
       const fetchedAllCategories = await categoriesService.getAll();
       
+      // ✅ Validação de array
       const validCategories = Array.isArray(fetchedAllCategories) ? fetchedCategories : [];
       
       setAllCategories(validCategories);
       setMainCategories(validCategories.filter(c => c.parentId === null));
 
       if (isEditing && id) {
-        const productId = parseInt(id);
-        if (isNaN(productId)) {
-          console.error('ID do produto inválido para edição:', id);
-          navigate('/admin/produtos');
-          return;
-        }
-
-        const product = await productsService.getById(productId);
+        const product = await productsService.getById(parseInt(id));
         
         if (product) {
           setFormData({
@@ -134,7 +129,6 @@ useEffect(() => {
             }
           }
         } else {
-          console.warn(`Produto com ID ${id} não encontrado.`);
           navigate('/admin/produtos');
         }
       } else {
