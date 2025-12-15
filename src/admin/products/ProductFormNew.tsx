@@ -12,16 +12,16 @@ import { calculateDiscountedPrice } from '../../utils/productUtils';
 // Função auxiliar para formatar a data ISO para o input datetime-local
 const formatIsoToLocal = (isoString: string | undefined): string => {
   if (!isoString) return '';
-  // A string salva já está no formato YYYY-MM-DDTHH:MM:SS (local time).
-  // Apenas pegamos a parte que o input datetime-local precisa (YYYY-MM-DDTHH:MM).
-  return isoString.slice(0, 16);
+  const date = new Date(isoString);
+  // Ajusta para o fuso horário local para que o input exiba a hora correta
+  date.setMinutes(date.getMinutes() - date.getTimezoneOffset());
+  return date.toISOString().slice(0, 16);
 };
 
 // Função auxiliar para converter a string local do input de volta para ISO (sem offset)
 const formatLocalToIso = (localString: string): string => {
   if (!localString) return '';
   // Cria a data localmente e salva como ISO, mas sem o 'Z' (UTC), para que o banco salve o valor exato
-  // O slice(0, 19) remove o 'Z' e milissegundos, mantendo o formato YYYY-MM-DDTHH:MM:SS
   return new Date(localString).toISOString().slice(0, 19);
 };
 
@@ -45,7 +45,7 @@ export default function ProductFormNew() {
   const [customColors, setCustomColors] = useState<ProductColor[]>([]);
   const [newCustomColor, setNewCustomColor] = useState({ nome: '', hex: '#000000' });
   const [newCustomColorImagePreview, setNewCustomColorImagePreview] = useState<string>('');
-  const [newCustomColorUploadLoading, setNewCustomColorImageUploadLoading] = useState(false);
+  const [newCustomColorUploadLoading, setNewCustomColorUploadLoading] = useState(false);
   const [lastAddedCustomColorId, setLastAddedCustomColorId] = useState<string | null>(null);
 
   const [variants, setVariants] = useState<ProductVariant[]>([]);
@@ -82,7 +82,7 @@ useEffect(() => {
       const fetchedAllCategories = await categoriesService.getAll();
       
       // ✅ Validação de array
-      const validCategories = Array.isArray(fetchedAllCategories) ? fetchedCategories : [];
+      const validCategories = Array.isArray(fetchedAllCategories) ? fetchedAllCategories : [];
       
       setAllCategories(validCategories);
       setMainCategories(validCategories.filter(c => c.parentId === null));
