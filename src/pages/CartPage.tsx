@@ -228,10 +228,8 @@ export default function CartPage() {
               
               {/* Seção de CEP e Frete */}
               <div className="mb-6 pb-6 border-b border-gray-200">
-                {/* O CepInput só é necessário se a opção de Retirada na Loja não estiver selecionada */}
-                {selectedShippingOption?.type !== 'store_pickup' && (
-                  <CepInput onAddressChange={setShippingAddress} className="mb-4" />
-                )}
+                {/* CEP Input sempre visível */}
+                <CepInput onAddressChange={setShippingAddress} className="mb-4" />
 
                 {shippingOptions.length > 0 && (
                   <div className="space-y-3">

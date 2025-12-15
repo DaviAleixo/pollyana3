@@ -6,7 +6,7 @@ import { clicksService } from '../services/clicks.service';
 import { bannersService } from '../services/banners.service';
 import { Product, Category, Banner, SortOption } from '../types'; // Importar SortOption
 import ProductModal from './ProductModal';
-import { getDiscountDetails, isLaunchValid, calculateDiscountedPrice } from '../utils/productUtils'; // Importar calculateDiscountedPrice
+import { getDiscountDetails, isLaunchValid, calculateDiscountedPrice, isDiscountValid } from '../utils/productUtils'; // Importar calculateDiscountedPrice e isDiscountValid
 import CountdownTimer from './CountdownTimer';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select'; // Importar componentes Select
 import NewArrivalsCarousel from './NewArrivalsCarousel'; // Importar o carrossel
@@ -19,6 +19,9 @@ interface ProductCatalogProps {
   sortOption: SortOption; // Receber a opção de ordenação
   onSortChange: (option: SortOption) => void; // Receber o handler de ordenação
 }
+
+// ID fixo para a categoria virtual de Promoção
+const PROMOTION_CATEGORY_ID = 99999;
 
 export default function ProductCatalog({ allProducts, categories, selectedCategory, searchTerm, sortOption, onSortChange }: ProductCatalogProps) {
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
@@ -68,8 +71,12 @@ export default function ProductCatalog({ allProducts, categories, selectedCatego
     const filterProducts = async () => {
       let currentFiltered = allProducts;
 
-      // 1. Filtrar por categoria (incluindo subcategorias)
-      if (selectedCategory !== 1) {
+      // 1. Filtrar por categoria (incluindo subcategorias) OU por Promoção
+      if (selectedCategory === PROMOTION_CATEGORY_ID) {
+        // Filtra apenas produtos com desconto ativo
+        currentFiltered = currentFiltered.filter(p => isDiscountValid(p));
+      } else if (selectedCategory !== 1) {
+        // Filtra por categoria normal (incluindo descendentes)
         const descendants = await categoriesService.getDescendants(selectedCategory);
         const categoryAndDescendantIds = descendants.map(c => c.id);
         currentFiltered = currentFiltered.filter((p) => categoryAndDescendantIds.includes(p.categoriaId));

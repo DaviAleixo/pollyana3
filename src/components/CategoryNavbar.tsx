@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { categoriesService } from '../services/categories.service';
-import { Category } from '../types';
+import { productsService } from '../services/products.service'; // Importar productsService
+import { isDiscountValid } from '../utils/productUtils'; // Importar utilitário de desconto
+import { Category, Product } from '../types';
 
 interface CategoryNavbarProps {
   categories: Category[];
@@ -8,33 +10,63 @@ interface CategoryNavbarProps {
   selectedCategoryId: number;
 }
 
+// ID fixo para a categoria virtual de Promoção
+const PROMOTION_CATEGORY_ID = 99999;
+
 export default function CategoryNavbar({ categories, onSelectCategory, selectedCategoryId }: CategoryNavbarProps) {
   const [subcategories, setSubcategories] = useState<Record<number, Category[]>>({});
   const [hoveredCategory, setHoveredCategory] = useState<number | null>(null);
+  const [promotionCategory, setPromotionCategory] = useState<Category | null>(null);
 
+  // 1. Carregar subcategorias e a categoria de Promoção
   useEffect(() => {
-    const loadSubcategories = async () => {
+    const loadData = async () => {
       const subsMap: Record<number, Category[]> = {};
 
       for (const category of categories) {
         if (category && category.id) {
           const subs = await categoriesService.getSubcategories(category.id);
+          // Filtra apenas subcategorias visíveis
           subsMap[category.id] = Array.isArray(subs) ? subs.filter(c => c && c.visivel) : [];
         }
       }
-
       setSubcategories(subsMap);
+
+      // 2. Criar Categoria de Promoção Dinâmica
+      const allProducts = await productsService.getVisible();
+      const hasDiscountedProducts = allProducts.some(p => isDiscountValid(p));
+
+      if (hasDiscountedProducts) {
+        setPromotionCategory({
+          id: PROMOTION_CATEGORY_ID,
+          nome: 'Promoção',
+          visivel: true,
+          parentId: null,
+          slug: 'promocao',
+          order: -1, // Garante que apareça antes das categorias normais
+        });
+      } else {
+        setPromotionCategory(null);
+      }
     };
 
     if (categories.length > 0) {
-      loadSubcategories();
+      loadData();
     }
   }, [categories]);
 
   // Filtra categorias de nível superior, excluindo a categoria padrão 'Todos' (ID 1)
-  const topLevelCategories = categories.filter(c => 
-    (c.parentId === null || c.parentId === undefined) && c.id !== 1
+  let topLevelCategories = categories.filter(c => 
+    (c.parentId === null || c.parentId === undefined) && c.id !== 1 && c.visivel
   );
+
+  // Adiciona a categoria de Promoção se existir
+  if (promotionCategory) {
+    topLevelCategories = [promotionCategory, ...topLevelCategories];
+  }
+
+  // Ordena as categorias de nível superior (Promoção vem primeiro devido ao order: -1)
+  topLevelCategories.sort((a, b) => a.order - b.order);
 
   // Se não houver categorias de nível superior além de 'Todos', exibe apenas 'TODAS'
   if (!Array.isArray(topLevelCategories) || topLevelCategories.length === 0) {
@@ -76,7 +108,7 @@ export default function CategoryNavbar({ categories, onSelectCategory, selectedC
 
             const categorySubcategories = subcategories[category.id] || [];
             const hasSubs = Array.isArray(categorySubcategories) && categorySubcategories.length > 0;
-            const isSelected = selectedCategoryId === category.id;
+            const isSelected = selectedCategoryId === category.id || (category.id === PROMOTION_CATEGORY_ID && selectedCategoryId === PROMOTION_CATEGORY_ID);
 
             return (
               <div
@@ -94,8 +126,9 @@ export default function CategoryNavbar({ categories, onSelectCategory, selectedC
                   {(category.nome || 'Sem nome').toUpperCase()}
                 </button>
 
+                {/* Dropdown Elegante */}
                 {hasSubs && hoveredCategory === category.id && (
-                  <div className="absolute left-0 top-full mt-2 bg-white border border-gray-200 shadow-lg rounded-md py-2 min-w-[200px] z-50">
+                  <div className="absolute left-1/2 transform -translate-x-1/2 top-full mt-2 bg-white border border-gray-200 shadow-xl rounded-lg py-2 min-w-[200px] z-50">
                     {categorySubcategories.map((sub) => {
                       if (!sub || !sub.id) return null;
 
