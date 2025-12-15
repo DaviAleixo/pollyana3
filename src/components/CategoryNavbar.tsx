@@ -31,8 +31,12 @@ export default function CategoryNavbar({ categories, onSelectCategory, selectedC
     }
   }, [categories]);
 
-  const topLevelCategories = categories.filter(c => c.parentId === null || c.parentId === undefined);
+  // Filtra categorias de nível superior, excluindo a categoria padrão 'Todos' (ID 1)
+  const topLevelCategories = categories.filter(c => 
+    (c.parentId === null || c.parentId === undefined) && c.id !== 1
+  );
 
+  // Se não houver categorias de nível superior além de 'Todos', exibe apenas 'TODAS'
   if (!Array.isArray(topLevelCategories) || topLevelCategories.length === 0) {
     return (
       <nav className="fixed top-[88px] lg:top-16 left-0 w-full bg-white border-b border-gray-200 z-30">
@@ -40,9 +44,11 @@ export default function CategoryNavbar({ categories, onSelectCategory, selectedC
           <div className="flex items-center justify-center space-x-8 h-12 overflow-x-auto">
             <button
               onClick={() => onSelectCategory(1)}
-              className="text-sm font-medium text-gray-700 hover:text-black transition-colors whitespace-nowrap"
+              className={`text-sm font-medium transition-colors whitespace-nowrap ${
+                selectedCategoryId === 1 ? 'text-black border-b-2 border-black' : 'text-gray-600 hover:text-black'
+              }`}
             >
-              TODAS AS CATEGORIAS
+              TODAS
             </button>
           </div>
         </div>
@@ -54,6 +60,7 @@ export default function CategoryNavbar({ categories, onSelectCategory, selectedC
     <nav className="fixed top-[88px] lg:top-16 left-0 w-full bg-white border-b border-gray-200 z-30">
       <div className="max-w-7xl mx-auto px-4">
         <div className="flex items-center justify-center space-x-8 h-12 overflow-x-auto scrollbar-hide">
+          {/* Categoria 'TODAS' (ID 1) sempre exibida primeiro */}
           <button
             onClick={() => onSelectCategory(1)}
             className={`text-sm font-medium transition-colors whitespace-nowrap ${
@@ -63,6 +70,7 @@ export default function CategoryNavbar({ categories, onSelectCategory, selectedC
             TODAS
           </button>
 
+          {/* Outras categorias de nível superior */}
           {topLevelCategories.map((category) => {
             if (!category || !category.id) return null;
 

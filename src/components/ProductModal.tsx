@@ -22,15 +22,20 @@ export default function ProductModal({ product, isOpen, onClose, onAddToCart }: 
 
   const { originalPrice, discountedPrice, isDiscountActive, savingsAmount, savingsPercentage, countdown, discountType } = getDiscountDetails(product);
 
-  const availableVariants = product.variants?.filter(v => v.estoque > 0) || [];
-  const availableColors = Array.from(new Set(availableVariants.map(v => v.cor)));
+  const allVariants = product.variants || [];
+  const availableVariants = allVariants.filter(v => v.estoque > 0);
+  
+  // 1. Cores disponíveis: Cores que têm pelo menos uma variante com estoque > 0
+  const availableColorNames = Array.from(new Set(availableVariants.map(v => v.cor)));
+  const availableColors = product.cores?.filter(c => availableColorNames.includes(c.nome)) || [];
 
+  // 2. Tamanhos disponíveis: Tamanhos que têm estoque > 0 para a cor selecionada
   const availableSizes = selectedColor
-    ? Array.from(new Set(product.variants?.filter(v => v.cor === selectedColor.nome).map(v => v.tamanho)))
+    ? Array.from(new Set(allVariants.filter(v => v.cor === selectedColor.nome && v.estoque > 0).map(v => v.tamanho)))
     : [];
 
   const selectedVariant = selectedColor && selectedSize
-    ? product.variants?.find(v => v.cor === selectedColor.nome && v.tamanho === selectedSize)
+    ? allVariants.find(v => v.cor === selectedColor.nome && v.tamanho === selectedSize)
     : null;
 
   const currentStock = selectedVariant?.estoque || 0;
@@ -47,11 +52,20 @@ export default function ProductModal({ product, isOpen, onClose, onAddToCart }: 
 
       // Tenta pré-selecionar a primeira cor disponível
       if (availableColors.length > 0) {
-        const firstAvailableColorName = availableColors[0];
-        const firstColorConfig = product.cores?.find(c => c.nome === firstAvailableColorName);
+        const firstColorConfig = availableColors[0];
         
         if (firstColorConfig) {
           setSelectedColor(firstColorConfig);
+          
+          // Tenta pré-selecionar o primeiro tamanho disponível para essa cor
+          const sizesForFirstColor = allVariants
+            .filter(v => v.cor === firstColorConfig.nome && v.estoque > 0)
+            .map(v => v.tamanho) || [];
+
+          if (sizesForFirstColor.length > 0) {
+            setSelectedSize(sizesForFirstColor[0]);
+          }
+
           if (firstColorConfig.imagem) {
             setCurrentImage(firstColorConfig.imagem);
           } else {
@@ -60,7 +74,7 @@ export default function ProductModal({ product, isOpen, onClose, onAddToCart }: 
         }
       }
     }
-  }, [isOpen, product.id]); // Depende apenas do ID do produto para evitar loops
+  }, [isOpen, product.id, product.imagem, product.cores, product.variants]); // Adicionando dependências para garantir que a lógica de inicialização rode corretamente
 
   // Efeito para resetar a quantidade se o estoque mudar (ex: ao mudar cor/tamanho)
   useEffect(() => {
@@ -82,8 +96,8 @@ export default function ProductModal({ product, isOpen, onClose, onAddToCart }: 
     setSelectedSize('');
 
     // Filtra tamanhos disponíveis para a nova cor
-    const sizesForNewColor = product.variants
-      ?.filter(v => v.cor === colorConfig.nome && v.estoque > 0)
+    const sizesForNewColor = allVariants
+      .filter(v => v.cor === colorConfig.nome && v.estoque > 0)
       .map(v => v.tamanho) || [];
 
     // Se houver apenas um tamanho disponível, pré-seleciona
@@ -193,7 +207,7 @@ export default function ProductModal({ product, isOpen, onClose, onAddToCart }: 
                   Selecione a Cor *
                 </label>
                 <div className="flex flex-wrap gap-3">
-                  {product.cores?.filter(c => availableColors.includes(c.nome)).map((colorConfig) => (
+                  {availableColors.map((colorConfig) => (
                     <button
                       key={colorConfig.nome}
                       onClick={() => handleColorSelect(colorConfig)}
