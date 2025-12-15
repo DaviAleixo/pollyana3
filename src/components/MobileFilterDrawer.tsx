@@ -26,15 +26,15 @@ const MobileFilterDrawer: React.FC<MobileFilterDrawerProps> = ({ isOpen, onClose
 
   return (
     <>
-      {/* Overlay */}
+      {/* Overlay (Apenas em Mobile) */}
       <div
         className="fixed inset-0 bg-black/50 z-40 lg:hidden"
         onClick={onClose}
       />
 
-      {/* Drawer */}
+      {/* Drawer (Visível em todas as telas, mas com largura fixa) */}
       <aside
-        className={`fixed top-0 right-0 h-full w-64 bg-white shadow-lg z-50 transform transition-transform duration-300 ease-in-out lg:hidden
+        className={`fixed top-0 right-0 h-full w-64 bg-white shadow-lg z-50 transform transition-transform duration-300 ease-in-out
           ${isOpen ? 'translate-x-0' : 'translate-x-full'}`}
       >
         <div className="p-4 border-b border-gray-200 flex items-center justify-between">
