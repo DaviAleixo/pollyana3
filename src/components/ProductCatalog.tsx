@@ -6,11 +6,10 @@ import { clicksService } from '../services/clicks.service';
 import { bannersService } from '../services/banners.service';
 import { Product, Category, Banner, SortOption } from '../types'; // Importar SortOption
 import ProductModal from './ProductModal';
-import { getDiscountDetails, isLaunchValid, calculateDiscountedPrice, isDiscountValid } from '../utils/productUtils'; // Importar calculateDiscountedPrice e isDiscountValid
+import { getDiscountDetails, isLaunchValid, calculateDiscountedPrice } from '../utils/productUtils'; // Importar calculateDiscountedPrice
 import CountdownTimer from './CountdownTimer';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select'; // Importar componentes Select
 import NewArrivalsCarousel from './NewArrivalsCarousel'; // Importar o carrossel
-import SectionTitle from './SectionTitle';
 
 interface ProductCatalogProps {
   allProducts: Product[]; // Receber todos os produtos do App.tsx
@@ -20,8 +19,6 @@ interface ProductCatalogProps {
   sortOption: SortOption; // Receber a opção de ordenação
   onSortChange: (option: SortOption) => void; // Receber o handler de ordenação
 }
-
-const PROMOTION_CATEGORY_ID = 0;
 
 export default function ProductCatalog({ allProducts, categories, selectedCategory, searchTerm, sortOption, onSortChange }: ProductCatalogProps) {
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
@@ -71,12 +68,8 @@ export default function ProductCatalog({ allProducts, categories, selectedCatego
     const filterProducts = async () => {
       let currentFiltered = allProducts;
 
-      // 1. Filtrar por categoria (incluindo subcategorias) ou por Promoção
-      if (selectedCategory === PROMOTION_CATEGORY_ID) {
-        // Filtra apenas produtos com desconto ativo
-        currentFiltered = currentFiltered.filter(isDiscountValid);
-      } else if (selectedCategory !== 1) {
-        // Filtra por categoria normal (incluindo subcategorias)
+      // 1. Filtrar por categoria (incluindo subcategorias)
+      if (selectedCategory !== 1) {
         const descendants = await categoriesService.getDescendants(selectedCategory);
         const categoryAndDescendantIds = descendants.map(c => c.id);
         currentFiltered = currentFiltered.filter((p) => categoryAndDescendantIds.includes(p.categoriaId));
@@ -155,8 +148,6 @@ export default function ProductCatalog({ allProducts, categories, selectedCatego
         break;
       case 'category':
         if (banner.linkedCategoryId) {
-          // Se for link para categoria, seleciona a categoria e rola para o catálogo
-          onSelectCategory(banner.linkedCategoryId);
           document.getElementById('catalog')?.scrollIntoView({ behavior: 'smooth' });
         }
         break;
@@ -179,11 +170,7 @@ export default function ProductCatalog({ allProducts, categories, selectedCatego
     setCurrentBannerIndex((prev) => (prev - 1 + visibleBanners.length) % visibleBanners.length);
   };
 
-  const currentCategoryName = selectedCategory === 1 
-    ? 'TODAS AS CATEGORIAS' 
-    : selectedCategory === PROMOTION_CATEGORY_ID 
-      ? 'PROMOÇÃO'
-      : categories.find(c => c.id === selectedCategory)?.nome.toUpperCase() || 'CATÁLOGO';
+  const currentBanner = visibleBanners[currentBannerIndex];
 
   // Verifica se a categoria 'Todos' está selecionada para exibir o carrossel de lançamentos
   const shouldShowLaunches = selectedCategory === 1 && searchTerm === '';
@@ -263,23 +250,20 @@ export default function ProductCatalog({ allProducts, categories, selectedCatego
             <NewArrivalsCarousel />
           </div>
         )}
-        
-        {/* Título da Categoria e Filtro de Ordenação */}
-        <div className="flex justify-between items-center mb-8 mt-8">
-          <SectionTitle title={currentCategoryName} className="text-left !pb-0 !mb-0" />
-          <div className="hidden lg:flex">
-            <Select onValueChange={(value: SortOption) => onSortChange(value)} value={sortOption}>
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Ordenar por" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="default">Padrão</SelectItem>
-                <SelectItem value="price_asc">Preço: Mais Barato</SelectItem>
-                <SelectItem value="price_desc">Preço: Mais Caro</SelectItem>
-                <SelectItem value="alpha_asc">Nome: A-Z</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+
+        {/* Filtro de Ordenação (Desktop Only) */}
+        <div className="hidden lg:flex justify-end mb-8 mt-8">
+          <Select onValueChange={(value: SortOption) => onSortChange(value)} value={sortOption}>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="Ordenar por" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="default">Padrão</SelectItem>
+              <SelectItem value="price_asc">Preço: Mais Barato</SelectItem>
+              <SelectItem value="price_desc">Preço: Mais Caro</SelectItem>
+              <SelectItem value="alpha_asc">Nome: A-Z</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
 
         {/* Grid de produtos - padronizado e responsivo */}
