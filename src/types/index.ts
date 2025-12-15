@@ -72,7 +72,6 @@ export interface Category {
   visivel: boolean;
   parentId?: number | null; // ID da categoria pai, null para categorias principais
   slug: string; // Slug para URLs amigáveis
-  description?: string; // Descrição opcional
   order: number; // Ordem de exibição
 }
 

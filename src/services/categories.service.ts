@@ -13,7 +13,6 @@ private mapFromDB(db: any): Category {
     visivel: db.visivel,
     parentId: db.parent_id ?? null,
     slug: db.slug,
-    description: db.description,
     order: db.order ?? 0
   };
 }
@@ -27,7 +26,6 @@ private mapFromDB(db: any): Category {
     if (category.visivel !== undefined) dbData.visivel = category.visivel;
     if (category.parentId !== undefined) dbData.parent_id = category.parentId;
     if (category.slug !== undefined) dbData.slug = category.slug;
-    if (category.description !== undefined) dbData.description = category.description;
     if (category.order !== undefined) dbData.order = category.order;
 
     return dbData;
@@ -130,7 +128,6 @@ private mapFromDB(db: any): Category {
       visivel: categoryData.visivel ?? true,
       parent_id: categoryData.parentId ?? null,
       slug,
-      description: categoryData.description ?? null,
       order,
     };
 

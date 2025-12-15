@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { Trash2, Minus, Plus, ArrowLeft, ShoppingBag, Truck, Store } from 'lucide-react'; // Importar Store icon
 import { cartService } from '../services/cart.service';
 import { shippingService } from '../services/shipping.service';
+import { clicksService } from '../services/clicks.service'; // Importar clicksService
 import { CartItem, ShippingAddress, ShippingOption } from '../types';
 import CountdownTimer from '../components/CountdownTimer';
 import CepInput from '../components/CepInput';
@@ -75,7 +76,7 @@ export default function CartPage() {
     }
   };
 
-  const handleFinalizeOrder = () => {
+  const handleFinalizeOrder = async () => {
     if (!selectedShippingOption) {
       alert('Por favor, selecione uma opção de frete para finalizar o pedido.');
       return;
@@ -87,6 +88,13 @@ export default function CartPage() {
       return;
     }
 
+    // 1. Registrar cliques para cada produto único no carrinho
+    const uniqueProductIds = Array.from(new Set(cartItems.map(item => item.productId)));
+    
+    // Registra um clique para cada produto no carrinho
+    await Promise.all(uniqueProductIds.map(productId => clicksService.registerClick(productId)));
+
+    // 2. Gerar mensagem e redirecionar
     const whatsappMessage = cartService.generateWhatsAppMessage(shippingAddress, selectedShippingOption);
     const phoneNumber = '5531983921200'; // Usando o número do WhatsAppButton
     const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(whatsappMessage)}`;

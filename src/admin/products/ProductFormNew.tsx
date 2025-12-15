@@ -9,6 +9,23 @@ import { STANDARD_COLORS, getNearestColorName } from '../../utils/colorUtils';
 import ColorPicker from '../../components/ColorPicker';
 import { calculateDiscountedPrice } from '../../utils/productUtils';
 
+// Função auxiliar para formatar a data ISO para o input datetime-local
+const formatIsoToLocal = (isoString: string | undefined): string => {
+  if (!isoString) return '';
+  const date = new Date(isoString);
+  // Ajusta para o fuso horário local para que o input exiba a hora correta
+  date.setMinutes(date.getMinutes() - date.getTimezoneOffset());
+  return date.toISOString().slice(0, 16);
+};
+
+// Função auxiliar para converter a string local do input de volta para ISO (sem offset)
+const formatLocalToIso = (localString: string): string => {
+  if (!localString) return '';
+  // Cria a data localmente e salva como ISO, mas sem o 'Z' (UTC), para que o banco salve o valor exato
+  return new Date(localString).toISOString().slice(0, 19);
+};
+
+
 export default function ProductFormNew() {
   const navigate = useNavigate();
   const { id } = useParams();
@@ -922,8 +939,8 @@ useEffect(() => {
                     </label>
                     <input
                       type="datetime-local"
-                      value={launchExpiresAt ? new Date(launchExpiresAt).toISOString().slice(0, 16) : ''}
-                      onChange={(e) => setLaunchExpiresAt(new Date(e.target.value).toISOString())}
+                      value={formatIsoToLocal(launchExpiresAt)}
+                      onChange={(e) => setLaunchExpiresAt(formatLocalToIso(e.target.value))}
                       className="w-full border border-gray-300 px-4 py-2 focus:outline-none focus:border-black"
                     />
                     <p className="text-xs text-gray-500 mt-1">
@@ -1008,8 +1025,8 @@ useEffect(() => {
                     </label>
                     <input
                       type="datetime-local"
-                      value={discountExpiresAt ? new Date(discountExpiresAt).toISOString().slice(0, 16) : ''}
-                      onChange={(e) => setDiscountExpiresAt(new Date(e.target.value).toISOString())}
+                      value={formatIsoToLocal(discountExpiresAt)}
+                      onChange={(e) => setDiscountExpiresAt(formatLocalToIso(e.target.value))}
                       className="w-full border border-gray-300 px-4 py-2 focus:outline-none focus:border-black"
                       required
                     />
