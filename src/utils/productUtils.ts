@@ -11,7 +11,10 @@ export function isDiscountValid(product: Product): boolean {
   }
 
   if (product.discountExpiresAt) {
-    const expirationDate = new Date(product.discountExpiresAt);
+    // Adiciona 'Z' para garantir que seja interpretado como UTC,
+    // o que é necessário para que o cálculo de diferença seja consistente,
+    // já que o Supabase armazena a string ISO sem fuso horário.
+    const expirationDate = new Date(product.discountExpiresAt + 'Z'); 
     if (expirationDate < new Date()) {
       return false; // Desconto expirou
     }
@@ -29,7 +32,7 @@ export function isLaunchValid(product: Product): boolean {
     return false;
   }
   if (product.launchExpiresAt) {
-    const expirationDate = new Date(product.launchExpiresAt);
+    const expirationDate = new Date(product.launchExpiresAt + 'Z'); // Adiciona 'Z' para consistência
     if (expirationDate < new Date()) {
       return false; // Lançamento expirado
     }
@@ -79,7 +82,9 @@ export function calculateSavings(product: Product): number {
 export function formatCountdown(expirationDateString?: string): string | null {
   if (!expirationDateString) return null;
 
-  const expirationDate = new Date(expirationDateString);
+  // Adiciona 'Z' para garantir que a string ISO sem fuso horário seja tratada como UTC
+  // Isso é crucial para que o cálculo de diferença seja preciso, pois o Supabase armazena a string sem fuso.
+  const expirationDate = new Date(expirationDateString + 'Z'); 
   const now = new Date();
   const diff = expirationDate.getTime() - now.getTime();
 
@@ -102,7 +107,9 @@ export function formatCountdown(expirationDateString?: string): string | null {
   } else if (minutes > 0) {
     return `${remainingMinutes}m`;
   } else {
-    return null; // Menos de 1 minuto, pode ser considerado expirado ou não exibido
+    // Se for menos de 1 minuto, mostra em segundos
+    const remainingSeconds = seconds % 60;
+    return `${remainingSeconds}s`;
   }
 }
 

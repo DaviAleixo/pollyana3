@@ -1,11 +1,18 @@
-import { useEffect, useState } from 'react';
-import { Plus, Minus, AlertTriangle } from 'lucide-react';
+import { useEffect, useState, useCallback } from 'react';
+import { Plus, Minus, AlertTriangle, Save } from 'lucide-react';
 import { productsService } from '../services/products.service';
 import { categoriesService } from '../services/categories.service';
-import { Product, Category } from '../types';
+import { Product, Category, ProductVariant } from '../types';
 
 type SortField = 'nome' | 'estoque';
 type SortOrder = 'asc' | 'desc';
+
+// Interface para rastrear alterações de estoque
+interface StockChange {
+  productId: number;
+  variantId: string;
+  newStock: number;
+}
 
 export default function StockControlNew() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -13,14 +20,11 @@ export default function StockControlNew() {
   const [sortField, setSortField] = useState<SortField>('nome');
   const [sortOrder, setSortOrder] = useState<SortOrder>('asc');
   const [expandedProduct, setExpandedProduct] = useState<number | null>(null);
+  const [stockChanges, setStockChanges] = useState<StockChange[]>([]);
+  const [isSaving, setIsSaving] = useState(false);
 
   // Carregar produtos e categorias
-  useEffect(() => {
-    loadProducts();
-    loadCategories();
-  }, []);
-
-  const loadProducts = async () => {
+  const loadProducts = useCallback(async () => {
     try {
       const result = await productsService.getAll();
 
@@ -32,13 +36,14 @@ export default function StockControlNew() {
           : [];
 
       setProducts(array);
+      setStockChanges([]); // Limpa as alterações pendentes após o carregamento
     } catch (err) {
       console.error("Erro ao carregar produtos:", err);
       setProducts([]);
     }
-  };
+  }, []);
 
-  const loadCategories = async () => {
+  const loadCategories = useCallback(async () => {
     try {
       const list = await categoriesService.getAll();
       setCategories(list);
@@ -46,7 +51,12 @@ export default function StockControlNew() {
       console.error("Erro ao carregar categorias:", err);
       setCategories([]);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    loadProducts();
+    loadCategories();
+  }, [loadProducts, loadCategories]);
 
   // Pega nome da categoria
   const getCategoryName = (categoryId: number): string => {
@@ -56,27 +66,88 @@ export default function StockControlNew() {
 
   const getTotalStock = (product: Product): number => {
     if (product.variants && product.variants.length > 0) {
-      return product.variants.reduce((sum, v) => sum + v.estoque, 0);
+      // Aplica as alterações pendentes ao estoque total
+      const currentChanges = stockChanges.filter(c => c.productId === product.id);
+      
+      let total = product.variants.reduce((sum, v) => {
+        const change = currentChanges.find(c => c.variantId === v.id);
+        return sum + (change ? change.newStock : v.estoque);
+      }, 0);
+
+      return total;
     }
+    // Se não tiver variantes, o estoque é o principal (não suportado neste componente, mas mantemos a compatibilidade)
     return product.estoque || 0;
+  };
+
+  const getVariantStock = (productId: number, variantId: string, initialStock: number): number => {
+    const change = stockChanges.find(c => c.productId === productId && c.variantId === variantId);
+    return change ? change.newStock : initialStock;
   };
 
   const updateVariantStock = (productId: number, variantId: string, delta: number) => {
     const product = products.find(p => p.id === productId);
     if (!product || !product.variants) return;
 
-    const updatedVariants = product.variants.map(v =>
-      v.id === variantId ? { ...v, estoque: Math.max(0, v.estoque + delta) } : v
-    );
+    const variant = product.variants.find(v => v.id === variantId);
+    if (!variant) return;
 
-    const updatedProduct = {
-      ...product,
-      variants: updatedVariants,
-      estoque: updatedVariants.reduce((sum, v) => sum + v.estoque, 0),
-    };
+    const currentStock = getVariantStock(productId, variantId, variant.estoque);
+    const newStock = Math.max(0, currentStock + delta);
 
-    productsService.update(productId, updatedProduct);
-    loadProducts();
+    // Atualiza o estado local de alterações
+    setStockChanges(prev => {
+      const existingIndex = prev.findIndex(c => c.productId === productId && c.variantId === variantId);
+      
+      if (existingIndex !== -1) {
+        const updatedChanges = [...prev];
+        updatedChanges[existingIndex] = { ...updatedChanges[existingIndex], newStock };
+        return updatedChanges;
+      } else {
+        return [...prev, { productId, variantId, newStock }];
+      }
+    });
+  };
+
+  const handleSaveStock = async () => {
+    if (stockChanges.length === 0) return;
+
+    setIsSaving(true);
+    const productsToUpdate = new Set(stockChanges.map(c => c.productId));
+
+    try {
+      for (const productId of productsToUpdate) {
+        const product = products.find(p => p.id === productId);
+        if (!product || !product.variants) continue;
+
+        const changesForProduct = stockChanges.filter(c => c.productId === productId);
+        
+        const updatedVariants: ProductVariant[] = product.variants.map(v => {
+          const change = changesForProduct.find(c => c.variantId === v.id);
+          if (change) {
+            return { ...v, estoque: change.newStock };
+          }
+          return v;
+        });
+
+        const newTotalStock = updatedVariants.reduce((sum, v) => sum + v.estoque, 0);
+
+        // Persistir a alteração no produto (variantes e estoque total)
+        await productsService.update(productId, {
+          variants: updatedVariants,
+          estoque: newTotalStock,
+        });
+      }
+
+      // Recarregar dados após salvar
+      await loadProducts();
+      alert('Estoque atualizado com sucesso!');
+    } catch (error) {
+      console.error('Erro ao salvar estoque:', error);
+      alert('Erro ao salvar estoque. Verifique o console.');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleSort = (field: SortField) => {
@@ -91,10 +162,14 @@ export default function StockControlNew() {
   const sortedProducts = [...products].sort((a, b) => {
     let comparison = 0;
 
+    // Usar o estoque atualizado para ordenação
+    const stockA = getTotalStock(a);
+    const stockB = getTotalStock(b);
+
     if (sortField === 'nome') {
       comparison = a.nome.localeCompare(b.nome);
     } else if (sortField === 'estoque') {
-      comparison = getTotalStock(a) - getTotalStock(b);
+      comparison = stockA - stockB;
     }
 
     return sortOrder === 'asc' ? comparison : -comparison;
@@ -103,6 +178,8 @@ export default function StockControlNew() {
   const toggleExpand = (productId: number) => {
     setExpandedProduct(expandedProduct === productId ? null : productId);
   };
+
+  const hasPendingChanges = stockChanges.length > 0;
 
   return (
     <div>
@@ -116,6 +193,31 @@ export default function StockControlNew() {
         </p>
       </div>
 
+      {/* Botão Salvar Alterações */}
+      <div className="mb-6 flex justify-end">
+        <button
+          onClick={handleSaveStock}
+          disabled={!hasPendingChanges || isSaving}
+          className={`flex items-center gap-2 px-6 py-3 font-medium transition-colors ${
+            hasPendingChanges && !isSaving
+              ? 'bg-green-600 text-white hover:bg-green-700'
+              : 'bg-gray-300 text-gray-600 cursor-not-allowed'
+          }`}
+        >
+          {isSaving ? (
+            <div className="flex items-center gap-2">
+              <AlertTriangle className="w-4 h-4 animate-spin" />
+              Salvando...
+            </div>
+          ) : (
+            <>
+              <Save className="w-5 h-5" />
+              Salvar Alterações ({stockChanges.length})
+            </>
+          )}
+        </button>
+      </div>
+
       {/* Tabela */}
       <div className="bg-white border border-gray-200 overflow-hidden">
         <div className="overflow-x-auto">
@@ -123,14 +225,14 @@ export default function StockControlNew() {
             <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
                 <th className="px-4 w-8"></th>
-                <th className="px-4">
-                  <button onClick={() => handleSort('nome')}>
+                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">
+                  <button onClick={() => handleSort('nome')} className="flex items-center gap-1 hover:text-black">
                     Produto {sortField === 'nome' ? (sortOrder === 'asc' ? '↑' : '↓') : ''}
                   </button>
                 </th>
-                <th className="px-4">Categoria</th>
-                <th className="px-4 text-center">
-                  <button onClick={() => handleSort('estoque')}>
+                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Categoria</th>
+                <th className="px-4 py-3 text-center text-sm font-semibold text-gray-700">
+                  <button onClick={() => handleSort('estoque')} className="flex items-center gap-1 hover:text-black mx-auto">
                     Estoque Total {sortField === 'estoque' ? (sortOrder === 'asc' ? '↑' : '↓') : ''}
                   </button>
                 </th>
@@ -187,37 +289,42 @@ export default function StockControlNew() {
                             <table className="w-full">
                               <thead>
                                 <tr>
-                                  <th className="px-4 py-2 text-left">Cor</th>
-                                  <th className="px-4 py-2 text-left">Tamanho</th>
-                                  <th className="px-4 py-2 text-center">Estoque</th>
-                                  <th className="px-4 py-2 text-center">Ações</th>
+                                  <th className="px-4 py-2 text-left text-sm font-semibold">Cor</th>
+                                  <th className="px-4 py-2 text-left text-sm font-semibold">Tamanho</th>
+                                  <th className="px-4 py-2 text-center text-sm font-semibold">Estoque</th>
+                                  <th className="px-4 py-2 text-center text-sm font-semibold">Ações</th>
                                 </tr>
                               </thead>
                               <tbody>
-                                {product.variants.map((variant) => (
-                                  <tr key={variant.id}>
-                                    <td className="px-4 py-2">{variant.cor}</td>
-                                    <td className="px-4 py-2">{variant.tamanho}</td>
-                                    <td className="px-4 py-2 text-center">{variant.estoque}</td>
-                                    <td className="px-4 py-2">
-                                      <div className="flex justify-center gap-2">
-                                        <button
-                                          onClick={() => updateVariantStock(product.id, variant.id, 1)}
-                                          className="bg-green-600 text-white p-1.5"
-                                        >
-                                          <Plus className="w-3 h-3" />
-                                        </button>
-                                        <button
-                                          onClick={() => updateVariantStock(product.id, variant.id, -1)}
-                                          className="bg-red-600 text-white p-1.5"
-                                          disabled={variant.estoque === 0}
-                                        >
-                                          <Minus className="w-3 h-3" />
-                                        </button>
-                                      </div>
-                                    </td>
-                                  </tr>
-                                ))}
+                                {product.variants!.map((variant) => {
+                                  const currentStock = getVariantStock(product.id, variant.id, variant.estoque);
+                                  return (
+                                    <tr key={variant.id}>
+                                      <td className="px-4 py-2 text-sm">{variant.cor}</td>
+                                      <td className="px-4 py-2 text-sm">{variant.tamanho}</td>
+                                      <td className="px-4 py-2 text-center text-sm">{currentStock}</td>
+                                      <td className="px-4 py-2">
+                                        <div className="flex justify-center gap-2">
+                                          <button
+                                            type="button"
+                                            onClick={() => updateVariantStock(product.id, variant.id, 1)}
+                                            className="bg-green-600 text-white p-1.5 hover:bg-green-700 transition-colors"
+                                          >
+                                            <Plus className="w-3 h-3" />
+                                          </button>
+                                          <button
+                                            type="button"
+                                            onClick={() => updateVariantStock(product.id, variant.id, -1)}
+                                            className="bg-red-600 text-white p-1.5 hover:bg-red-700 transition-colors"
+                                            disabled={currentStock === 0}
+                                          >
+                                            <Minus className="w-3 h-3" />
+                                          </button>
+                                        </div>
+                                      </td>
+                                    </tr>
+                                  );
+                                })}
                               </tbody>
                             </table>
                           </td>
@@ -229,6 +336,24 @@ export default function StockControlNew() {
               )}
             </tbody>
           </table>
+        </div>
+      </div>
+      
+      {/* Legenda */}
+      <div className="mt-4 p-4 bg-gray-50 border border-gray-200">
+        <div className="flex flex-wrap gap-4 text-sm text-gray-600">
+          <div className="flex items-center gap-2">
+            <AlertTriangle className="w-4 h-4 text-red-600" />
+            <span>Estoque baixo (≤ 5 unidades)</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Plus className="w-4 h-4 text-green-600" />
+            <span>Adicionar estoque (local)</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Minus className="w-4 h-4 text-red-600" />
+            <span>Remover estoque (local)</span>
+          </div>
         </div>
       </div>
     </div>
