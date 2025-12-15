@@ -24,40 +24,53 @@ export default function StockManagement() {
     }
   }, [id]);
 
-  const loadData = () => {
+  const loadData = async () => {
     if (!id) return;
 
-    const productData = productsService.getById(parseInt(id));
-    if (!productData) {
-      alert('Produto não encontrado');
+    try {
+      const productData = await productsService.getById(parseInt(id));
+      if (!productData) {
+        alert('Produto não encontrado');
+        navigate('/admin/produtos');
+        return;
+      }
+
+      setProduct(productData);
+
+      // Carregar histórico mais recente primeiro
+      const historyData = await stockService.getProductHistory(parseInt(id));
+      const validHistory = Array.isArray(historyData) ? historyData : [];
+      setHistory([...validHistory].reverse());
+    } catch (error) {
+      console.error('Erro ao carregar dados:', error);
+      alert('Erro ao carregar dados do produto');
       navigate('/admin/produtos');
-      return;
     }
-
-    setProduct(productData);
-
-    // Carregar histórico mais recente primeiro
-    const historyData = stockService.getProductHistory(parseInt(id));
-    setHistory(historyData.reverse());
   };
 
-  const handleAddStock = () => {
+  const handleAddStock = async () => {
     if (!product || quantidade <= 0) return;
 
     setLoading(true);
-    const success = stockService.addStock(product.id, quantidade, observacao);
+    try {
+      const success = await stockService.addStock(product.id, quantidade, observacao);
 
-    if (success) {
-      setQuantidade(1);
-      setObservacao('');
-      loadData();
-    } else {
+      if (success) {
+        setQuantidade(1);
+        setObservacao('');
+        await loadData();
+      } else {
+        alert('Erro ao adicionar estoque');
+      }
+    } catch (error) {
+      console.error('Erro ao adicionar estoque:', error);
       alert('Erro ao adicionar estoque');
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
-  const handleRemoveStock = () => {
+  const handleRemoveStock = async () => {
     if (!product || quantidade <= 0) return;
 
     if (product.estoque < quantidade) {
@@ -66,16 +79,22 @@ export default function StockManagement() {
     }
 
     setLoading(true);
-    const success = stockService.removeStock(product.id, quantidade, observacao);
+    try {
+      const success = await stockService.removeStock(product.id, quantidade, observacao);
 
-    if (success) {
-      setQuantidade(1);
-      setObservacao('');
-      loadData();
-    } else {
+      if (success) {
+        setQuantidade(1);
+        setObservacao('');
+        await loadData();
+      } else {
+        alert('Erro ao remover estoque');
+      }
+    } catch (error) {
+      console.error('Erro ao remover estoque:', error);
       alert('Erro ao remover estoque');
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   const formatDate = (isoDate: string) => {
@@ -89,7 +108,13 @@ export default function StockManagement() {
     });
   };
 
-  if (!product) return null;
+  if (!product) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-black"></div>
+      </div>
+    );
+  }
 
   const isLowStock = stockService.isLowStock(product.id);
 
@@ -200,7 +225,7 @@ export default function StockManagement() {
           </h2>
         </div>
 
-        {history.length === 0 ? (
+        {!Array.isArray(history) || history.length === 0 ? (
           <div className="p-8 text-center text-gray-500">
             Nenhuma movimentação registrada
           </div>
