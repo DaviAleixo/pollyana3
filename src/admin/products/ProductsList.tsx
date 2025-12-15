@@ -124,7 +124,7 @@ export default function ProductsList() {
                   Preço
                 </th>
                 <th className="text-center px-6 py-4 text-sm font-semibold text-gray-700">
-                  Estoque
+                  Estoque Total
                 </th>
                 <th className="text-center px-6 py-4 text-sm font-semibold text-gray-700">
                   Ativo
@@ -192,10 +192,10 @@ export default function ProductsList() {
                       R$ {product.preco.toFixed(2)}
                     </td>
 
-                    {/* Estoque */}
+                    {/* Estoque Total */}
                     <td className="px-6 py-4 text-center">
                       <Link
-                        to={`/admin/produtos/estoque/${product.id}`}
+                        to={`/admin/estoque`}
                         className={`inline-flex items-center gap-1 px-3 py-1 font-semibold text-sm transition-colors ${
                           stockService.isLowStock(product.id)
                             ? 'bg-red-100 text-red-700 hover:bg-red-200'

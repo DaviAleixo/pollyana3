@@ -52,7 +52,7 @@ export default function ProductFormNew() {
     categoriaId: 0, // 0 significa "nenhuma subcategoria selecionada" ou "categoria principal tem subcategorias"
     ativo: true,
     visivel: true,
-    estoque: 0,
+    // estoque: 0, // REMOVIDO
   });
 
   const tamanhosPadrao = ['P', 'M', 'G', 'GG', 'TAM ÚNICO'];
@@ -82,7 +82,7 @@ useEffect(() => {
             categoriaId: product.categoriaId,
             ativo: product.ativo,
             visivel: product.visivel,
-            estoque: product.estoque,
+            // estoque: product.estoque, // REMOVIDO
           });
           setMainImagePreview(product.imagem);
 
@@ -418,6 +418,7 @@ useEffect(() => {
       const tempProduct: Product = {
         ...formData,
         id: 0, // ID temporário
+        estoque: 0, // Adicionado estoque para satisfazer o tipo Product
         discountActive,
         discountType,
         discountValue,
@@ -441,7 +442,7 @@ useEffect(() => {
 
     const productData: Product = {
       ...formData,
-      estoque: estoqueTotal,
+      estoque: estoqueTotal, // O estoque total é calculado a partir das variantes
       tipoTamanho,
       cores: allSelectedColors,
       variants,
@@ -996,7 +997,7 @@ useEffect(() => {
                     />
                     {formData.preco > 0 && (
                       <p className="text-xs text-gray-500 mt-1">
-                        Preço final estimado: R$ {calculateDiscountedPrice({ ...formData, discountActive: true, discountType, discountValue, discountExpiresAt: '2100-01-01T00:00:00Z' }).toFixed(2)}
+                        Preço final estimado: R$ {calculateDiscountedPrice({ ...formData, id: 0, estoque: 0, discountActive: true, discountType, discountValue, discountExpiresAt: '2100-01-01T00:00:00Z' }).toFixed(2)}
                       </p>
                     )}
                   </div>

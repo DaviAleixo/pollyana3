@@ -14,7 +14,7 @@ import ProductFormNew from './admin/products/ProductFormNew';
 import CategoriesList from './admin/categories/CategoriesList';
 import CategoryForm from './admin/categories/CategoryForm';
 import Reports from './admin/Reports';
-import StockManagement from './admin/stock/StockManagement';
+// import StockManagement from './admin/stock/StockManagement'; // REMOVIDO
 import StockControlNew from './admin/StockControlNew';
 import Login from './admin/Login';
 import Settings from './admin/Settings';
@@ -22,8 +22,7 @@ import BannersList from './admin/banners/BannersList';
 import BannerForm from './admin/banners/BannerForm';
 import ProtectedRoute from './components/ProtectedRoute';
 import WhatsAppButton from './components/WhatsAppButton';
-import NewArrivalsCarousel from './components/NewArrivalsCarousel';
-import MobileFilterDrawer from './components/MobileFilterDrawer'; // NEW IMPORT
+import MobileFilterDrawer from './components/MobileFilterDrawer';
 import { initializeData } from './utils/initializeData';
 import { authService } from './services/auth.service';
 import { categoriesService } from './services/categories.service';
@@ -149,7 +148,7 @@ function App() {
           <Route path="produtos" element={<ProductsList />} />
           <Route path="produtos/novo" element={<ProductFormNew />} />
           <Route path="produtos/editar/:id" element={<ProductFormNew />} />
-          <Route path="produtos/estoque/:id" element={<StockManagement />} />
+          {/* <Route path="produtos/estoque/:id" element={<StockManagement />} /> REMOVIDO */}
           <Route path="estoque" element={<StockControlNew />} />
           <Route path="categorias" element={<CategoriesList />} />
           <Route path="categorias/novo" element={<CategoryForm />} />

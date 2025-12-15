@@ -40,16 +40,20 @@ export default function CartPage() {
   useEffect(() => {
     // Recalcular opções de frete sempre que o endereço mudar ou a página carregar
     const options = shippingService.calculateShippingOptions(shippingAddress);
-    setShippingOptions(options);
+    
+    // Usar Promise.resolve para lidar com a função assíncrona
+    Promise.resolve(options).then(resolvedOptions => {
+      setShippingOptions(resolvedOptions);
 
-    // Tentar manter a opção selecionada se ela ainda existir, caso contrário, selecionar a primeira
-    if (selectedShippingOption && options.some(opt => opt.type === selectedShippingOption.type)) {
-      setSelectedShippingOption(options.find(opt => opt.type === selectedShippingOption.type) || null);
-    } else if (options.length > 0) {
-      setSelectedShippingOption(options[0]);
-    } else {
-      setSelectedShippingOption(null);
-    }
+      // Tentar manter a opção selecionada se ela ainda existir, caso contrário, selecionar a primeira
+      if (selectedShippingOption && resolvedOptions.some(opt => opt.type === selectedShippingOption.type)) {
+        setSelectedShippingOption(resolvedOptions.find(opt => opt.type === selectedShippingOption.type) || null);
+      } else if (resolvedOptions.length > 0) {
+        setSelectedShippingOption(resolvedOptions[0]);
+      } else {
+        setSelectedShippingOption(null);
+      }
+    });
   }, [shippingAddress]); // Depende apenas do shippingAddress
 
   useEffect(() => {
@@ -77,20 +81,34 @@ export default function CartPage() {
       return;
     }
 
-    // Se a opção for retirada na loja, não precisamos de endereço de entrega
+    // Se a opção for entrega (não retirada na loja) E não houver endereço, impede a finalização
     if (selectedShippingOption.type !== 'store_pickup' && !shippingAddress) {
-      alert('Por favor, informe o CEP para entrega.');
+      alert('Por favor, informe o CEP para entrega ou selecione Retirada na Loja.');
       return;
     }
 
     const whatsappMessage = cartService.generateWhatsAppMessage(shippingAddress, selectedShippingOption);
-    const phoneNumber = '5531982607426';
+    const phoneNumber = '5531983921200'; // Usando o número do WhatsAppButton
     const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(whatsappMessage)}`;
 
     window.open(whatsappUrl, '_blank');
     cartService.clearCart();
     setShippingAddress(null);
     setSelectedShippingOption(null);
+  };
+
+  // Lógica de habilitação do botão
+  const isCartEmpty = cartItems.length === 0;
+  const isShippingSelected = !!selectedShippingOption;
+  const isAddressRequired = isShippingSelected && selectedShippingOption.type !== 'store_pickup';
+  const isAddressValid = !isAddressRequired || !!shippingAddress;
+  const canFinalize = !isCartEmpty && isShippingSelected && isAddressValid;
+
+  const getDisabledReason = () => {
+    if (isCartEmpty) return 'Seu carrinho está vazio.';
+    if (!isShippingSelected) return 'Selecione uma opção de frete.';
+    if (isAddressRequired && !isAddressValid) return 'Informe o CEP para entrega ou selecione Retirada na Loja.';
+    return '';
   };
 
   return (
@@ -109,7 +127,7 @@ export default function CartPage() {
           </p>
         </div>
 
-        {cartItems.length === 0 ? (
+        {isCartEmpty ? (
           <div className="bg-white border border-gray-200 p-8 text-center rounded-lg shadow-md"> {/* Card arredondado */}
             <p className="text-gray-600 text-xl mb-4">Seu carrinho está vazio.</p>
             <Link
@@ -210,7 +228,10 @@ export default function CartPage() {
               
               {/* Seção de CEP e Frete */}
               <div className="mb-6 pb-6 border-b border-gray-200">
-                <CepInput onAddressChange={setShippingAddress} className="mb-4" />
+                {/* O CepInput só é necessário se a opção de Retirada na Loja não estiver selecionada */}
+                {selectedShippingOption?.type !== 'store_pickup' && (
+                  <CepInput onAddressChange={setShippingAddress} className="mb-4" />
+                )}
 
                 {shippingOptions.length > 0 && (
                   <div className="space-y-3">
@@ -275,12 +296,18 @@ export default function CartPage() {
 
               <button
                 onClick={handleFinalizeOrder}
-                disabled={!selectedShippingOption || cartItems.length === 0 || (selectedShippingOption.type !== 'store_pickup' && !shippingAddress)}
+                disabled={!canFinalize}
                 className="w-full bg-green-600 text-white px-6 py-3 mt-6 hover:bg-green-700 transition-colors font-medium flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed rounded-md" // Botão arredondado
+                title={!canFinalize ? getDisabledReason() : 'Finalizar pedido no WhatsApp'}
               >
                 <img src="/whatsapp-icon.svg" alt="WhatsApp" className="w-5 h-5" />
                 Finalizar Pedido no WhatsApp
               </button>
+              {!canFinalize && (
+                <p className="text-xs text-red-600 mt-2 text-center font-semibold">
+                  {getDisabledReason()}
+                </p>
+              )}
               <p className="text-xs text-gray-500 mt-3 text-center">
                 Você será redirecionado para o WhatsApp com os detalhes do seu pedido.
               </p>
