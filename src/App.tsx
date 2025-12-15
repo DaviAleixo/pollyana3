@@ -22,19 +22,22 @@ import BannersList from './admin/banners/BannersList';
 import BannerForm from './admin/banners/BannerForm';
 import ProtectedRoute from './components/ProtectedRoute';
 import WhatsAppButton from './components/WhatsAppButton';
-import NewArrivalsCarousel from './components/NewArrivalsCarousel'; // NOVO IMPORT
+import NewArrivalsCarousel from './components/NewArrivalsCarousel';
+import MobileFilterDrawer from './components/MobileFilterDrawer'; // NEW IMPORT
 import { initializeData } from './utils/initializeData';
 import { authService } from './services/auth.service';
 import { categoriesService } from './services/categories.service';
 import { productsService } from './services/products.service';
-import { Product, Category } from './types';
+import { Product, Category, SortOption } from './types'; // Import SortOption
 
 function App() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [mobileFilterOpen, setMobileFilterOpen] = useState(false); // NEW STATE
   const [selectedCategory, setSelectedCategory] = useState(1);
   const [categories, setCategories] = useState<Category[]>([]);
   const [allProducts, setAllProducts] = useState<Product[]>([]);
   const [searchTerm, setSearchTerm] = useState<string>('');
+  const [sortOption, setSortOption] = useState<SortOption>('default'); // NEW STATE
 
   useEffect(() => {
     const loadData = async () => {
@@ -74,6 +77,7 @@ function App() {
                 onMenuToggle={toggleSidebar}
                 searchTerm={searchTerm}
                 onSearchTermChange={handleSearchTermChange}
+                onFilterToggle={() => setMobileFilterOpen(true)} // NEW PROP
               />
               <CategoryNavbar
                 categories={categories}
@@ -87,6 +91,15 @@ function App() {
                 onSelectCategory={handleSelectCategory}
                 selectedCategoryId={selectedCategory}
               />
+              
+              {/* Mobile Filter Drawer */}
+              <MobileFilterDrawer
+                isOpen={mobileFilterOpen}
+                onClose={() => setMobileFilterOpen(false)}
+                sortOption={sortOption}
+                onSortChange={setSortOption}
+              />
+              
               <div className="pt-[136px] lg:pt-28">
                 
                 <ProductCatalog
@@ -94,6 +107,8 @@ function App() {
                   categories={categories}
                   selectedCategory={selectedCategory}
                   searchTerm={searchTerm}
+                  sortOption={sortOption} // PASS DOWN
+                  onSortChange={setSortOption} // PASS DOWN
                 />
                 <Benefits />
                 <Footer />
@@ -105,7 +120,12 @@ function App() {
         {/* Também adicionando o Sidebar à rota /carrinho */}
         <Route path="/carrinho" element={
           <div className="min-h-screen bg-white">
-            <Navbar onMenuToggle={toggleSidebar} searchTerm={searchTerm} onSearchTermChange={handleSearchTermChange} />
+            <Navbar 
+              onMenuToggle={toggleSidebar} 
+              searchTerm={searchTerm} 
+              onSearchTermChange={handleSearchTermChange} 
+              onFilterToggle={() => setMobileFilterOpen(true)} // NEW PROP
+            />
             <Sidebar
               isOpen={sidebarOpen}
               onClose={toggleSidebar}

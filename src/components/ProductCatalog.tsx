@@ -4,31 +4,28 @@ import { productsService } from '../services/products.service';
 import { categoriesService } from '../services/categories.service';
 import { clicksService } from '../services/clicks.service';
 import { bannersService } from '../services/banners.service';
-import { Product, Category, Banner } from '../types';
+import { Product, Category, Banner, SortOption } from '../types'; // Importar SortOption
 import ProductModal from './ProductModal';
-import { getDiscountDetails, isLaunchValid } from '../utils/productUtils'; // Importar isLaunchValid
+import { getDiscountDetails, isLaunchValid, calculateDiscountedPrice } from '../utils/productUtils'; // Importar calculateDiscountedPrice
 import CountdownTimer from './CountdownTimer';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select'; // Importar componentes Select
 import NewArrivalsCarousel from './NewArrivalsCarousel'; // Importar o carrossel
-
-// SearchBar não é mais importado aqui, pois é renderizado no App.tsx
 
 interface ProductCatalogProps {
   allProducts: Product[]; // Receber todos os produtos do App.tsx
   categories: Category[]; // Receber categorias do App.tsx
   selectedCategory: number; // Receber selectedCategory como prop
   searchTerm: string; // Receber o termo de busca como prop
+  sortOption: SortOption; // Receber a opção de ordenação
+  onSortChange: (option: SortOption) => void; // Receber o handler de ordenação
 }
 
-type SortOption = 'default' | 'price_asc' | 'price_desc' | 'alpha_asc';
-
-export default function ProductCatalog({ allProducts, categories, selectedCategory, searchTerm }: ProductCatalogProps) {
+export default function ProductCatalog({ allProducts, categories, selectedCategory, searchTerm, sortOption, onSortChange }: ProductCatalogProps) {
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [visibleBanners, setVisibleBanners] = useState<Banner[]>([]);
   const [currentBannerIndex, setCurrentBannerIndex] = useState(0);
-  const [sortOption, setSortOption] = useState<SortOption>('default'); // Novo estado para a opção de ordenação
 
   // Carregar banners visíveis e configurar listener para mudanças no storage
   useEffect(() => {
@@ -103,9 +100,9 @@ export default function ProductCatalog({ allProducts, categories, selectedCatego
     let sortedProducts = [...currentFiltered]; // Cria uma cópia mutável para ordenar
 
     if (sortOption === 'price_asc') {
-      sortedProducts.sort((a, b) => a.preco - b.preco);
+      sortedProducts.sort((a, b) => calculateDiscountedPrice(a) - calculateDiscountedPrice(b)); // Usar preço com desconto
     } else if (sortOption === 'price_desc') {
-      sortedProducts.sort((a, b) => b.preco - a.preco);
+      sortedProducts.sort((a, b) => calculateDiscountedPrice(b) - calculateDiscountedPrice(a)); // Usar preço com desconto
     } else if (sortOption === 'alpha_asc') {
       sortedProducts.sort((a, b) => a.nome.localeCompare(b.nome));
     }
@@ -113,7 +110,7 @@ export default function ProductCatalog({ allProducts, categories, selectedCatego
 
       // 4. Se estiver na categoria "Todos" e houver lançamentos, remover produtos de lançamento do grid
       // para evitar duplicação (eles aparecem no carrossel de lançamentos)
-      if (selectedCategory === 1) {
+      if (selectedCategory === 1 && searchTerm === '') {
         sortedProducts = sortedProducts.filter(product => !isLaunchValid(product));
       }
 
@@ -121,7 +118,7 @@ export default function ProductCatalog({ allProducts, categories, selectedCatego
     };
 
     filterProducts();
-  }, [allProducts, categories, selectedCategory, searchTerm, sortOption]);
+  }, [allProducts, categories, selectedCategory, searchTerm, sortOption]); // Adicionado sortOption
 
   const handleOpenModal = (product: Product) => {
     setSelectedProduct(product);
@@ -176,7 +173,7 @@ export default function ProductCatalog({ allProducts, categories, selectedCatego
   const currentBanner = visibleBanners[currentBannerIndex];
 
   // Verifica se a categoria 'Todos' está selecionada para exibir o carrossel de lançamentos
-  const shouldShowLaunches = selectedCategory === 1;
+  const shouldShowLaunches = selectedCategory === 1 && searchTerm === '';
 
   return (
     <section id="catalog" className="bg-white px-4"> {/* Removido py-16 md:py-24 */}
@@ -254,9 +251,9 @@ export default function ProductCatalog({ allProducts, categories, selectedCatego
           </div>
         )}
 
-        {/* Filtro de Ordenação */}
-        <div className="flex justify-end mb-8 mt-8">
-          <Select onValueChange={(value: SortOption) => setSortOption(value)} value={sortOption}>
+        {/* Filtro de Ordenação (Desktop Only) */}
+        <div className="hidden lg:flex justify-end mb-8 mt-8">
+          <Select onValueChange={(value: SortOption) => onSortChange(value)} value={sortOption}>
             <SelectTrigger className="w-[180px]">
               <SelectValue placeholder="Ordenar por" />
             </SelectTrigger>

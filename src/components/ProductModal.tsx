@@ -22,50 +22,11 @@ export default function ProductModal({ product, isOpen, onClose, onAddToCart }: 
 
   const { originalPrice, discountedPrice, isDiscountActive, savingsAmount, savingsPercentage, countdown, discountType } = getDiscountDetails(product);
 
-  useEffect(() => {
-    if (isOpen) {
-      setSelectedColor(null);
-      setSelectedSize('');
-      setCurrentImage(product.imagem);
-      setQuantity(1);
-
-      const availableVariants = product.variants?.filter(v => v.estoque > 0) || [];
-      const availableColors = Array.from(new Set(availableVariants.map(v => v.cor)));
-
-      const whiteColorName = 'Branco';
-      const whiteColorConfig = product.cores?.find(c => c.nome === whiteColorName);
-      const hasWhiteStock = availableVariants.some(v => v.cor === whiteColorName && v.estoque > 0);
-
-      if (availableColors.includes(whiteColorName) && whiteColorConfig && hasWhiteStock) {
-        setSelectedColor(whiteColorConfig);
-        if (whiteColorConfig.imagem) {
-          setCurrentImage(whiteColorConfig.imagem);
-        } else {
-          setCurrentImage(product.imagem);
-        }
-      } else if (availableColors.length > 0) {
-        const firstAvailableColorName = availableColors[0];
-        const firstColorConfig = product.cores?.find(c => c.nome === firstAvailableColorName);
-        if (firstColorConfig) {
-          setSelectedColor(firstColorConfig);
-          if (firstColorConfig.imagem) {
-            setCurrentImage(firstColorConfig.imagem);
-          } else {
-            setCurrentImage(product.imagem);
-          }
-        }
-      }
-    }
-  }, [isOpen, product]);
-
-  if (!isOpen) return null;
-
   const availableVariants = product.variants?.filter(v => v.estoque > 0) || [];
-
   const availableColors = Array.from(new Set(availableVariants.map(v => v.cor)));
 
   const availableSizes = selectedColor
-    ? Array.from(new Set(availableVariants.filter(v => v.cor === selectedColor.nome).map(v => v.tamanho)))
+    ? Array.from(new Set(product.variants?.filter(v => v.cor === selectedColor.nome).map(v => v.tamanho)))
     : [];
 
   const selectedVariant = selectedColor && selectedSize
@@ -76,9 +37,59 @@ export default function ProductModal({ product, isOpen, onClose, onAddToCart }: 
 
   const canAddToCart = selectedColor && selectedSize && currentStock > 0 && quantity > 0 && quantity <= currentStock;
 
+  // Efeito para inicializar seleção de cor/tamanho e resetar estados
+  useEffect(() => {
+    if (isOpen) {
+      setSelectedColor(null);
+      setSelectedSize('');
+      setCurrentImage(product.imagem);
+      setQuantity(1);
+
+      // Tenta pré-selecionar a primeira cor disponível
+      if (availableColors.length > 0) {
+        const firstAvailableColorName = availableColors[0];
+        const firstColorConfig = product.cores?.find(c => c.nome === firstAvailableColorName);
+        
+        if (firstColorConfig) {
+          setSelectedColor(firstColorConfig);
+          if (firstColorConfig.imagem) {
+            setCurrentImage(firstColorConfig.imagem);
+          } else {
+            setCurrentImage(product.imagem);
+          }
+        }
+      }
+    }
+  }, [isOpen, product.id]); // Depende apenas do ID do produto para evitar loops
+
+  // Efeito para resetar a quantidade se o estoque mudar (ex: ao mudar cor/tamanho)
+  useEffect(() => {
+    if (quantity > currentStock) {
+      setQuantity(Math.max(1, currentStock));
+    }
+    if (currentStock === 0) {
+      setQuantity(0);
+    } else if (quantity === 0 && currentStock > 0) {
+      setQuantity(1);
+    }
+  }, [currentStock]);
+
+
+  if (!isOpen) return null;
+
   const handleColorSelect = (colorConfig: ProductColor) => {
     setSelectedColor(colorConfig);
     setSelectedSize('');
+
+    // Filtra tamanhos disponíveis para a nova cor
+    const sizesForNewColor = product.variants
+      ?.filter(v => v.cor === colorConfig.nome && v.estoque > 0)
+      .map(v => v.tamanho) || [];
+
+    // Se houver apenas um tamanho disponível, pré-seleciona
+    if (sizesForNewColor.length === 1) {
+      setSelectedSize(sizesForNewColor[0]);
+    }
 
     if (colorConfig.imagem) {
       setCurrentImage(colorConfig.imagem);
@@ -227,24 +238,30 @@ export default function ProductModal({ product, isOpen, onClose, onAddToCart }: 
               </div>
             )}
 
-            {selectedColor && selectedSize && (
-              <div className="mb-6 p-3 bg-gray-50 border border-gray-200 rounded-md"> {/* Card de estoque arredondado */}
+            {/* Exibição de Estoque e Status */}
+            {selectedColor && selectedSize ? (
+              currentStock > 0 ? (
+                <div className="mb-6 p-3 bg-green-50 border border-green-200 rounded-md">
+                  <p className="text-sm text-green-700 font-semibold">
+                    Disponível: <span className="font-bold">{currentStock}</span> unidade(s) em estoque.
+                  </p>
+                </div>
+              ) : (
+                <div className="mb-6 p-3 bg-red-50 border border-red-200 rounded-md">
+                  <p className="text-sm text-red-700 font-semibold">
+                    Esgotado nesta cor e tamanho.
+                  </p>
+                </div>
+              )
+            ) : (
+              <div className="mb-6 p-3 bg-gray-50 border border-gray-200 rounded-md">
                 <p className="text-sm text-gray-600">
-                  Estoque disponível para {selectedColor.nome} / {selectedSize}:{' '}
-                  <span className="font-bold">{currentStock}</span> unidades
+                  Selecione cor e tamanho para verificar a disponibilidade.
                 </p>
               </div>
             )}
 
-            {currentStock === 0 && selectedColor && selectedSize && (
-              <div className="mb-6 p-3 bg-red-50 border border-red-200 rounded-md">
-                <p className="text-sm text-red-700 font-semibold">
-                  Produto esgotado nesta cor e tamanho.
-                </p>
-              </div>
-            )}
-
-            {canAddToCart && (
+            {currentStock > 0 && selectedColor && selectedSize && (
               <div className="mb-6 flex items-center gap-4">
                 <label className="block text-sm font-semibold text-gray-700">
                   Quantidade:
@@ -254,12 +271,14 @@ export default function ProductModal({ product, isOpen, onClose, onAddToCart }: 
                     type="button"
                     onClick={() => setQuantity(prev => Math.max(1, prev - 1))}
                     className="p-2 hover:bg-gray-100 transition-colors rounded-l-md"
+                    disabled={quantity <= 1}
                   >
                     <Minus className="w-4 h-4 text-gray-700" />
                   </button>
                   <input
                     type="number"
                     min="1"
+                    max={currentStock} // Limitar pelo estoque
                     value={quantity}
                     onChange={(e) => setQuantity(Math.max(1, Math.min(currentStock, parseInt(e.target.value) || 1)))}
                     className="w-16 text-center border-x border-gray-300 py-2 focus:outline-none"
@@ -268,18 +287,11 @@ export default function ProductModal({ product, isOpen, onClose, onAddToCart }: 
                     type="button"
                     onClick={() => setQuantity(prev => Math.min(currentStock, prev + 1))}
                     className="p-2 hover:bg-gray-100 transition-colors rounded-r-md"
+                    disabled={quantity >= currentStock}
                   >
                     <Plus className="w-4 h-4 text-gray-700" />
                   </button>
                 </div>
-              </div>
-            )}
-
-            {!canAddToCart && (
-              <div className="mb-6 p-3 bg-gray-50 border border-gray-200 rounded-md">
-                <p className="text-sm text-gray-600">
-                  Selecione cor e tamanho para adicionar ao carrinho.
-                </p>
               </div>
             )}
 

@@ -8,6 +8,9 @@ export type DiscountType = 'percentage' | 'fixed'; // Novo tipo para o tipo de d
 // Novo tipo para o tipo de link do banner
 export type BannerLinkType = 'product' | 'category' | 'external' | 'informational';
 
+// Novo tipo para opções de ordenação
+export type SortOption = 'default' | 'price_asc' | 'price_desc' | 'alpha_asc';
+
 export interface ProductColor {
   id?: string; // Adicionado id opcional para identificação única no UI
   nome: string;

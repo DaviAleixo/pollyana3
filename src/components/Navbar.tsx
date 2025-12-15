@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { ShoppingBag, Menu } from 'lucide-react';
+import { ShoppingBag, Menu, Filter } from 'lucide-react';
 import { cartService } from '../services/cart.service';
 import SearchBar from './SearchBar';
 import logoImage from '/attached_assets/WhatsApp_Image_2025-11-25_at_15.53.40-removebg-preview_1765314447113.png';
@@ -9,9 +9,10 @@ interface NavbarProps {
   onMenuToggle: () => void;
   searchTerm: string;
   onSearchTermChange: (term: string) => void;
+  onFilterToggle: () => void; // NEW PROP
 }
 
-export default function Navbar({ onMenuToggle, searchTerm, onSearchTermChange }: NavbarProps) {
+export default function Navbar({ onMenuToggle, searchTerm, onSearchTermChange, onFilterToggle }: NavbarProps) {
   const [totalItemsInCart, setTotalItemsInCart] = useState(0);
   const [isScrolled, setIsScrolled] = useState(false);
 
@@ -75,12 +76,20 @@ export default function Navbar({ onMenuToggle, searchTerm, onSearchTermChange }:
           </Link>
         </div>
 
-        <div className="lg:hidden px-2 pb-2 pt-3 max-w-7xl mx-auto">
+        {/* Mobile Search Bar and Filter Button */}
+        <div className="lg:hidden px-2 pb-2 pt-3 max-w-7xl mx-auto flex items-center gap-2">
           <SearchBar
             onSearchTermChange={onSearchTermChange}
             initialSearchTerm={searchTerm}
-            className="w-full"
+            className="flex-1"
           />
+          <button
+            onClick={onFilterToggle}
+            className="p-2 hover:bg-gray-100 rounded-full transition-colors flex-shrink-0 border border-gray-300"
+            aria-label="Abrir filtros de ordenação"
+          >
+            <Filter className="w-6 h-6 text-black" strokeWidth={1.5} />
+          </button>
         </div>
       </nav>
     </>
