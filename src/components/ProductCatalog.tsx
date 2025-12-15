@@ -136,10 +136,11 @@ export default function ProductCatalog({ allProducts, categories, selectedCatego
     setSelectedProduct(null);
   };
 
+  // Ação vazia, pois o clique agora é centralizado na finalização do carrinho (CartPage.tsx)
   const handleAddToCart = () => {
-    if (selectedProduct) {
-      clicksService.registerClick(selectedProduct.id);
-    }
+    // if (selectedProduct) {
+    //   clicksService.registerClick(selectedProduct.id);
+    // }
   };
 
   const handleBannerClick = async (banner: Banner) => {
@@ -256,21 +257,6 @@ export default function ProductCatalog({ allProducts, categories, selectedCatego
             <NewArrivalsCarousel />
           </div>
         )}
-
-        {/* Filtro de Ordenação (REMOVIDO DAQUI) */}
-        {/* <div className="hidden lg:flex justify-end mb-8 mt-8">
-          <Select onValueChange={(value: SortOption) => onSortChange(value)} value={sortOption}>
-            <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="Ordenar por" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="default">Padrão</SelectItem>
-              <SelectItem value="price_asc">Preço: Mais Barato</SelectItem>
-              <SelectItem value="price_desc">Preço: Mais Caro</SelectItem>
-              <SelectItem value="alpha_asc">Nome: A-Z</SelectItem>
-            </SelectContent>
-          </Select>
-        </div> */}
 
         {/* Grid de produtos - padronizado e responsivo */}
         <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">

@@ -48,10 +48,9 @@ export default function NewArrivalsCarousel() {
     setSelectedProduct(null);
   };
 
+  // Ação vazia, pois o clique agora é centralizado na finalização do carrinho (CartPage.tsx)
   const handleAddToCart = () => {
-    if (selectedProduct) {
-      clicksService.registerClick(selectedProduct.id);
-    }
+    // clicksService.registerClick(selectedProduct.id); // REMOVIDO
   };
 
   // Implementação simples de scroll horizontal
