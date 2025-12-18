@@ -55,10 +55,15 @@ export default function CategoryNavbar({ categories, onSelectCategory, selectedC
     }
   }, [categories]);
 
-  // Filtra categorias de nível superior, excluindo a categoria padrão 'Todos' (ID 1)
+  // Filtra categorias de nível superior visíveis (parentId é null ou undefined)
   let topLevelCategories = categories.filter(c => 
-    (c.parentId === null || c.parentId === undefined) && c.id !== 1 && c.visivel
+    (c.parentId === null || c.parentId === undefined) && c.visivel
   );
+
+  // Remove a categoria 'Todos' (ID 1) da lista de categorias de nível superior,
+  // pois ela será tratada separadamente no início da lista.
+  const allCategory = topLevelCategories.find(c => c.id === 1);
+  topLevelCategories = topLevelCategories.filter(c => c.id !== 1);
 
   // Adiciona a categoria de Promoção se existir
   if (promotionCategory) {
@@ -68,58 +73,41 @@ export default function CategoryNavbar({ categories, onSelectCategory, selectedC
   // Ordena as categorias de nível superior (Promoção vem primeiro devido ao order: -1)
   topLevelCategories.sort((a, b) => a.order - b.order);
 
-  // Se não houver categorias de nível superior além de 'Todos', exibe apenas 'TODAS'
-  if (!Array.isArray(topLevelCategories) || topLevelCategories.length === 0) {
-    return (
-      <nav className="fixed top-[88px] lg:top-16 left-0 w-full bg-white border-b border-gray-200 z-30">
-        <div className="max-w-7xl mx-auto px-4">
-          <div className="flex items-center justify-center space-x-8 h-12 overflow-x-auto">
+  return (
+    <nav className="fixed top-[88px] lg:top-16 left-0 w-full bg-white border-b border-gray-200 z-30">
+      <div className="max-w-7xl mx-auto px-4">
+        <div className="flex items-center justify-start space-x-8 h-12 overflow-x-auto scrollbar-hide">
+          
+          {/* Categoria 'TODAS' (ID 1) sempre exibida primeiro */}
+          {allCategory && (
             <button
               onClick={() => onSelectCategory(1)}
-              className={`text-sm font-medium transition-colors whitespace-nowrap ${
+              className={`text-sm font-medium transition-colors whitespace-nowrap h-full flex items-center px-2 ${
                 selectedCategoryId === 1 ? 'text-black border-b-2 border-black' : 'text-gray-600 hover:text-black'
               }`}
             >
               TODAS
             </button>
-          </div>
-        </div>
-      </nav>
-    );
-  }
+          )}
 
-  return (
-    <nav className="fixed top-[88px] lg:top-16 left-0 w-full bg-white border-b border-gray-200 z-30">
-      <div className="max-w-7xl mx-auto px-4">
-        <div className="flex items-center justify-center space-x-8 h-12 overflow-x-auto scrollbar-hide">
-          {/* Categoria 'TODAS' (ID 1) sempre exibida primeiro */}
-          <button
-            onClick={() => onSelectCategory(1)}
-            className={`text-sm font-medium transition-colors whitespace-nowrap ${
-              selectedCategoryId === 1 ? 'text-black border-b-2 border-black' : 'text-gray-600 hover:text-black'
-            }`}
-          >
-            TODAS
-          </button>
-
-          {/* Outras categorias de nível superior */}
+          {/* Outras categorias de nível superior e Promoção */}
           {topLevelCategories.map((category) => {
             if (!category || !category.id) return null;
 
             const categorySubcategories = subcategories[category.id] || [];
             const hasSubs = Array.isArray(categorySubcategories) && categorySubcategories.length > 0;
-            const isSelected = selectedCategoryId === category.id || (category.id === PROMOTION_CATEGORY_ID && selectedCategoryId === PROMOTION_CATEGORY_ID);
+            const isSelected = selectedCategoryId === category.id || categorySubcategories.some(sub => sub.id === selectedCategoryId);
 
             return (
               <div
                 key={category.id}
-                className="relative h-full flex items-center" // Adicionado flex items-center e h-full para centralizar o botão
+                className="relative h-full flex items-center"
                 onMouseEnter={() => hasSubs && setHoveredCategory(category.id)}
                 onMouseLeave={() => setHoveredCategory(null)}
               >
                 <button
                   onClick={() => onSelectCategory(category.id)}
-                  className={`text-sm font-medium transition-colors whitespace-nowrap h-full flex items-center px-2 ${ // Adicionado h-full e px-2
+                  className={`text-sm font-medium transition-colors whitespace-nowrap h-full flex items-center px-2 ${
                     isSelected ? 'text-black border-b-2 border-black' : 'text-gray-600 hover:text-black'
                   }`}
                 >
