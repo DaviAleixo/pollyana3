@@ -113,13 +113,13 @@ export default function CategoryNavbar({ categories, onSelectCategory, selectedC
             return (
               <div
                 key={category.id}
-                className="relative"
+                className="relative h-full flex items-center" // Adicionado flex items-center e h-full para centralizar o botão
                 onMouseEnter={() => hasSubs && setHoveredCategory(category.id)}
                 onMouseLeave={() => setHoveredCategory(null)}
               >
                 <button
                   onClick={() => onSelectCategory(category.id)}
-                  className={`text-sm font-medium transition-colors whitespace-nowrap ${
+                  className={`text-sm font-medium transition-colors whitespace-nowrap h-full flex items-center px-2 ${ // Adicionado h-full e px-2
                     isSelected ? 'text-black border-b-2 border-black' : 'text-gray-600 hover:text-black'
                   }`}
                 >
@@ -128,14 +128,17 @@ export default function CategoryNavbar({ categories, onSelectCategory, selectedC
 
                 {/* Dropdown Elegante */}
                 {hasSubs && hoveredCategory === category.id && (
-                  <div className="absolute left-1/2 transform -translate-x-1/2 top-full mt-2 bg-white border border-gray-200 shadow-xl rounded-lg py-2 min-w-[200px] z-50">
+                  <div className="absolute left-1/2 transform -translate-x-1/2 top-full mt-0 bg-white border border-gray-200 shadow-xl rounded-lg py-1 min-w-[180px] z-50">
                     {categorySubcategories.map((sub) => {
                       if (!sub || !sub.id) return null;
 
                       return (
                         <button
                           key={sub.id}
-                          onClick={() => onSelectCategory(sub.id)}
+                          onClick={() => {
+                            onSelectCategory(sub.id);
+                            setHoveredCategory(null); // Fecha o dropdown após a seleção
+                          }}
                           className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
                         >
                           {sub.nome || 'Sem nome'}

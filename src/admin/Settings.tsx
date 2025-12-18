@@ -3,6 +3,7 @@ import { authService } from '../services/auth.service';
 import { shippingService } from '../services/shipping.service';
 import { Settings as SettingsIcon } from 'lucide-react';
 import CitySelectInput from '../components/CitySelectInput'; // Importar o novo componente
+import { NumericFormat } from 'react-number-format'; // Importar NumericFormat
 
 export default function Settings() {
   const [currentUsername, setCurrentUsername] = useState('');
@@ -22,11 +23,14 @@ export default function Settings() {
   useEffect(() => {
     setCurrentUsername(authService.getUsername());
     // Carregar configurações de frete
-    const config = shippingService.getConfig();
-    setStoreCity(config.storeCity);
-    setLocalDeliveryCost(config.localDeliveryCost);
-    setStandardShippingCost(config.standardShippingCost);
-    setStorePickupCost(config.storePickupCost); // Carregar custo de retirada na loja
+    const loadConfig = async () => {
+        const config = await shippingService.getConfig();
+        setStoreCity(config.storeCity);
+        setLocalDeliveryCost(config.localDeliveryCost);
+        setStandardShippingCost(config.standardShippingCost);
+        setStorePickupCost(config.storePickupCost); // Carregar custo de retirada na loja
+    };
+    loadConfig();
   }, []);
 
   const handleSubmitAuth = (e: React.FormEvent) => {
@@ -72,7 +76,7 @@ export default function Settings() {
     }
   };
 
-  const handleSubmitShipping = (e: React.FormEvent) => {
+  const handleSubmitShipping = async (e: React.FormEvent) => {
     e.preventDefault();
     setShippingMessage(null);
 
@@ -85,7 +89,7 @@ export default function Settings() {
       return;
     }
 
-    shippingService.updateConfig({
+    await shippingService.updateConfig({
       storeCity: storeCity.trim(),
       localDeliveryCost: localDeliveryCost,
       standardShippingCost: standardShippingCost,
@@ -200,12 +204,14 @@ export default function Settings() {
             <label className="block text-sm font-semibold text-gray-700 mb-2">
               Custo de Entrega Local (R$) *
             </label>
-            <input
-              type="number"
+            <NumericFormat
               value={localDeliveryCost}
-              onChange={(e) => setLocalDeliveryCost(parseFloat(e.target.value) || 0)}
-              min="0"
-              step="0.01"
+              onValueChange={(values) => setLocalDeliveryCost(values.floatValue || 0)}
+              thousandSeparator="."
+              decimalSeparator=","
+              prefix="R$ "
+              decimalScale={2}
+              fixedDecimalScale
               className="w-full border border-gray-300 px-4 py-2 focus:outline-none focus:border-black"
               required
             />
@@ -214,12 +220,14 @@ export default function Settings() {
             <label className="block text-sm font-semibold text-gray-700 mb-2">
               Custo de Frete Padrão (R$) *
             </label>
-            <input
-              type="number"
+            <NumericFormat
               value={standardShippingCost}
-              onChange={(e) => setStandardShippingCost(parseFloat(e.target.value) || 0)}
-              min="0"
-              step="0.01"
+              onValueChange={(values) => setStandardShippingCost(values.floatValue || 0)}
+              thousandSeparator="."
+              decimalSeparator=","
+              prefix="R$ "
+              decimalScale={2}
+              fixedDecimalScale
               className="w-full border border-gray-300 px-4 py-2 focus:outline-none focus:border-black"
               required
             />
@@ -229,12 +237,14 @@ export default function Settings() {
             <label className="block text-sm font-semibold text-gray-700 mb-2">
               Custo de Retirada na Loja (R$) *
             </label>
-            <input
-              type="number"
+            <NumericFormat
               value={storePickupCost}
-              onChange={(e) => setStorePickupCost(parseFloat(e.target.value) || 0)}
-              min="0"
-              step="0.01"
+              onValueChange={(values) => setStorePickupCost(values.floatValue || 0)}
+              thousandSeparator="."
+              decimalSeparator=","
+              prefix="R$ "
+              decimalScale={2}
+              fixedDecimalScale
               className="w-full border border-gray-300 px-4 py-2 focus:outline-none focus:border-black"
               required
             />

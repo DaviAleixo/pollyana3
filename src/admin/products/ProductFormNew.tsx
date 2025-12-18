@@ -8,6 +8,7 @@ import { resizeImage, validateFileSize, validateFileType } from '../../utils/ima
 import { STANDARD_COLORS, getNearestColorName } from '../../utils/colorUtils';
 import ColorPicker from '../../components/ColorPicker';
 import { calculateDiscountedPrice } from '../../utils/productUtils';
+import { NumericFormat } from 'react-number-format'; // Importar NumericFormat
 
 // Função auxiliar para formatar a data ISO para o input datetime-local
 const formatIsoToLocal = (isoString: string | undefined): string => {
@@ -171,7 +172,9 @@ useEffect(() => {
     }
   }, [lastAddedCustomColorId]);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+  ) => {
     const { name, value, type } = e.target;
     setFormData((prev) => ({
       ...prev,
@@ -533,13 +536,14 @@ useEffect(() => {
             <label className="block text-sm font-semibold text-gray-700 mb-2">
               Preço *
             </label>
-            <input
-              type="number"
-              name="preco"
+            <NumericFormat
               value={formData.preco}
-              onChange={handleChange}
-              step="0.01"
-              min="0"
+              onValueChange={(values) => setFormData(prev => ({ ...prev, preco: values.floatValue || 0 }))}
+              thousandSeparator="."
+              decimalSeparator=","
+              prefix="R$ "
+              decimalScale={2}
+              fixedDecimalScale
               className="w-full border border-gray-300 px-4 py-2 focus:outline-none focus:border-black"
               required
             />

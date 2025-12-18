@@ -54,7 +54,7 @@ export default function Navbar({ onMenuToggle, searchTerm, onSearchTermChange, o
             <img
               src={logoImage}
               alt="Pollyana Basic Chic"
-              className="h-12 md:h-14 w-auto object-contain"
+              className="h-16 md:h-20 w-auto object-contain" // Aumentado o tamanho da logo
             />
           </Link>
 
@@ -95,9 +95,10 @@ export default function Navbar({ onMenuToggle, searchTerm, onSearchTermChange, o
             initialSearchTerm={searchTerm}
             className="flex-1"
           />
+          {/* Ajustado o padding e o tamanho para ser visualmente similar ao ícone do carrinho */}
           <button
             onClick={onFilterToggle}
-            className="p-2 hover:bg-gray-100 rounded-full transition-colors flex-shrink-0 border border-gray-300"
+            className="p-3 hover:bg-gray-100 rounded-full transition-colors flex-shrink-0"
             aria-label="Abrir filtros de ordenação"
           >
             <Filter className="w-6 h-6 text-black" strokeWidth={1.5} />
