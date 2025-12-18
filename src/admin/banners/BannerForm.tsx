@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Upload, X } from 'lucide-react';
 import { bannersService } from '../../services/banners.service';
@@ -6,6 +6,7 @@ import { productsService } from '../../services/products.service';
 import { categoriesService } from '../../services/categories.service';
 import { Banner, BannerLinkType, Product, Category } from '../../types';
 import { resizeImage, validateFileSize, validateFileType } from '../../utils/imageUtils';
+import SearchSelectInput from '../../components/SearchSelectInput'; // Importar o novo componente
 
 export default function BannerForm() {
   const navigate = useNavigate();
@@ -25,52 +26,43 @@ export default function BannerForm() {
 
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [loadingData, setLoadingData] = useState(true);
 
-  const [searchTermProduct, setSearchTermProduct] = useState('');
-  const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
-  const [showProductDropdown, setShowProductDropdown] = useState(false);
+  const loadData = useCallback(async () => {
+    setLoadingData(true);
+    try {
+      // Carregar produtos e categorias de forma assíncrona
+      const [productsResult, categoriesResult, bannerData] = await Promise.all([
+        productsService.getAll(),
+        categoriesService.getAll(),
+        isEditing && id ? bannersService.getById(parseInt(id)) : Promise.resolve(null),
+      ]);
 
-  useEffect(() => {
-    const productsResult = productsService.getAll();
-    const categoriesResult = categoriesService.getAll();
+      setProducts(Array.isArray(productsResult) ? productsResult : []);
+      setCategories(Array.isArray(categoriesResult) ? categoriesResult : []);
 
-    setProducts(Array.isArray(productsResult) ? productsResult : []);
-    setCategories(Array.isArray(categoriesResult) ? categoriesResult : []);
-
-    if (isEditing && id) {
-      const banner = bannersService.getById(parseInt(id));
-      if (banner) {
-        setFormData(banner);
-        setImagePreview(banner.imageUrl);
-
-        if (banner.linkType === 'product' && banner.linkedProductId) {
-          const product = productsService.getById(banner.linkedProductId);
-          setSearchTermProduct(product?.nome || '');
-        }
+      if (isEditing && bannerData) {
+        setFormData(bannerData);
+        setImagePreview(bannerData.imageUrl);
       } else {
-        navigate('/admin/banners');
+        // Para novo banner, define a ordem
+        const allBanners = await bannersService.getAll(false);
+        setFormData(prev => ({
+          ...prev,
+          order: allBanners.length + 1,
+        }));
       }
-    } else {
-      setFormData(prev => ({
-        ...prev,
-        order: bannersService.getAll(false).length + 1,
-      }));
+    } catch (error) {
+      console.error('Erro ao carregar dados do formulário de banner:', error);
+      navigate('/admin/banners');
+    } finally {
+      setLoadingData(false);
     }
   }, [id, isEditing, navigate]);
 
   useEffect(() => {
-    if (searchTermProduct.length > 0) {
-      setFilteredProducts(
-        Array.isArray(products)
-          ? products.filter(p =>
-              p.nome.toLowerCase().includes(searchTermProduct.toLowerCase())
-            )
-          : []
-      );
-    } else {
-      setFilteredProducts([]);
-    }
-  }, [searchTermProduct, products]);
+    loadData();
+  }, [loadData]);
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
@@ -132,16 +124,17 @@ export default function BannerForm() {
       linkedCategoryId: undefined,
       externalUrl: undefined,
     }));
-    setSearchTermProduct('');
   };
 
-  const handleSelectProduct = (product: Product) => {
-    setFormData(prev => ({ ...prev, linkedProductId: product.id }));
-    setSearchTermProduct(product.nome);
-    setShowProductDropdown(false);
+  const handleSelectProduct = (productId: number | null) => {
+    setFormData(prev => ({ ...prev, linkedProductId: productId || undefined }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSelectCategory = (categoryId: number | null) => {
+    setFormData(prev => ({ ...prev, linkedCategoryId: categoryId || undefined }));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!formData.imageUrl) {
@@ -168,13 +161,37 @@ export default function BannerForm() {
     }
 
     if (isEditing && id) {
-      bannersService.update(parseInt(id), formData);
+      await bannersService.update(parseInt(id), formData);
     } else {
-      bannersService.create(formData);
+      await bannersService.create(formData);
     }
 
     navigate('/admin/banners');
   };
+
+  // Mapeamento de produtos para o formato SearchSelectInput
+  const productItems = products.map(p => ({
+    id: p.id,
+    name: p.nome,
+    description: `R$ ${p.preco.toFixed(2)} | Estoque: ${p.estoque}`,
+  }));
+
+  // Mapeamento de categorias para o formato SearchSelectInput
+  const categoryItems = categories
+    .filter(c => c.id !== 1) // Exclui a categoria 'Todos'
+    .map(c => ({
+      id: c.id,
+      name: c.nome,
+      description: c.parentId ? `Subcategoria de ${categories.find(p => p.id === c.parentId)?.nome || 'Pai Desconhecido'}` : 'Categoria Principal',
+    }));
+
+  if (loadingData) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-black"></div>
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -249,7 +266,7 @@ export default function BannerForm() {
             <input
               type="text"
               name="textOverlay"
-              value={formData.textOverlay}
+              value={formData.textOverlay || ''}
               onChange={handleChange}
               className="w-full border border-gray-300 px-4 py-2 focus:outline-none focus:border-black"
               placeholder="Ex: Nova Coleção, 20% OFF"
@@ -275,69 +292,23 @@ export default function BannerForm() {
           </div>
 
           {formData.linkType === 'product' && (
-            <div className="relative">
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Selecionar Produto *
-              </label>
-              <input
-                type="text"
-                value={searchTermProduct}
-                onChange={(e) => {
-                  setSearchTermProduct(e.target.value);
-                  setShowProductDropdown(true);
-                  setFormData(prev => ({ ...prev, linkedProductId: undefined }));
-                }}
-                onFocus={() => setShowProductDropdown(true)}
-                onBlur={() => setTimeout(() => setShowProductDropdown(false), 100)}
-                className="w-full border border-gray-300 px-4 py-2 focus:outline-none focus:border-black"
-                placeholder="Buscar produto..."
-              />
-              {showProductDropdown && filteredProducts.length > 0 && (
-                <ul className="absolute z-10 w-full bg-white border border-gray-300 mt-1 max-h-60 overflow-y-auto shadow-lg">
-                  {filteredProducts.map(product => (
-                    <li
-                      key={product.id}
-                      onMouseDown={() => handleSelectProduct(product)}
-                      className="px-4 py-2 cursor-pointer hover:bg-gray-100 text-sm"
-                    >
-                      {product.nome} (R$ {product.preco.toFixed(2)})
-                    </li>
-                  ))}
-                </ul>
-              )}
-              {formData.linkedProductId && searchTermProduct && (
-                <p className="text-xs text-gray-500 mt-1">
-                  Produto selecionado: {searchTermProduct}
-                </p>
-              )}
-            </div>
+            <SearchSelectInput
+              label="Selecionar Produto *"
+              items={productItems}
+              initialSelectedId={formData.linkedProductId}
+              onSelect={handleSelectProduct}
+              placeholder="Buscar produto por nome..."
+            />
           )}
 
           {formData.linkType === 'category' && (
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Selecionar Categoria *
-              </label>
-              <select
-                name="linkedCategoryId"
-                value={formData.linkedCategoryId || ''}
-                onChange={(e) =>
-                  setFormData(prev => ({
-                    ...prev,
-                    linkedCategoryId: parseInt(e.target.value, 10) || undefined,
-                  }))
-                }
-                className="w-full border border-gray-300 px-4 py-2 focus:outline-none focus:border-black"
-                required
-              >
-                <option value="">Selecione uma categoria</option>
-                {categories.map(category => (
-                  <option key={category.id} value={category.id}>
-                    {category.nome}
-                  </option>
-                ))}
-              </select>
-            </div>
+            <SearchSelectInput
+              label="Selecionar Categoria *"
+              items={categoryItems}
+              initialSelectedId={formData.linkedCategoryId}
+              onSelect={handleSelectCategory}
+              placeholder="Buscar categoria por nome..."
+            />
           )}
 
           {formData.linkType === 'external' && (
