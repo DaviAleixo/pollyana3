@@ -68,24 +68,12 @@ export default function CategoryNavbar({ categories, onSelectCategory, selectedC
   // Ordena as categorias de nível superior (Promoção vem primeiro devido ao order: -1)
   topLevelCategories.sort((a, b) => a.order - b.order);
 
+  // A categoria 'TODAS' (ID 1) é sempre exibida.
+  const allCategory = categories.find(c => c.id === 1 && c.visivel);
+
   // Se não houver categorias de nível superior além de 'Todos', exibe apenas 'TODAS'
-  if (!Array.isArray(topLevelCategories) || topLevelCategories.length === 0) {
-    return (
-      <nav className="fixed top-[88px] lg:top-16 left-0 w-full bg-white border-b border-gray-200 z-30">
-        <div className="max-w-7xl mx-auto px-4">
-          <div className="flex items-center justify-center space-x-8 h-12 overflow-x-auto">
-            <button
-              onClick={() => onSelectCategory(1)}
-              className={`text-sm font-medium transition-colors whitespace-nowrap ${
-                selectedCategoryId === 1 ? 'text-black border-b-2 border-black' : 'text-gray-600 hover:text-black'
-              }`}
-            >
-              TODAS
-            </button>
-          </div>
-        </div>
-      </nav>
-    );
+  if (!allCategory && topLevelCategories.length === 0) {
+    return null; // Não renderiza nada se não houver categorias visíveis
   }
 
   return (
@@ -93,14 +81,16 @@ export default function CategoryNavbar({ categories, onSelectCategory, selectedC
       <div className="max-w-7xl mx-auto px-4">
         <div className="flex items-center justify-center space-x-8 h-12 overflow-x-auto scrollbar-hide">
           {/* Categoria 'TODAS' (ID 1) sempre exibida primeiro */}
-          <button
-            onClick={() => onSelectCategory(1)}
-            className={`text-sm font-medium transition-colors whitespace-nowrap ${
-              selectedCategoryId === 1 ? 'text-black border-b-2 border-black' : 'text-gray-600 hover:text-black'
-            }`}
-          >
-            TODAS
-          </button>
+          {allCategory && (
+            <button
+              onClick={() => onSelectCategory(1)}
+              className={`text-sm font-medium transition-colors whitespace-nowrap ${
+                selectedCategoryId === 1 ? 'text-black border-b-2 border-black' : 'text-gray-600 hover:text-black'
+              }`}
+            >
+              {(allCategory.nome || 'TODAS').toUpperCase()}
+            </button>
+          )}
 
           {/* Outras categorias de nível superior */}
           {topLevelCategories.map((category) => {
