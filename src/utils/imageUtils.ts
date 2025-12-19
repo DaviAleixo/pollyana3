@@ -55,7 +55,7 @@ export function resizeImage(
         }
 
         if (height > config.maxHeight) {
-          height = config.maxHeight;
+          height = height;
           width = height * aspectRatio;
         }
 
@@ -63,11 +63,21 @@ export function resizeImage(
         canvas.width = width;
         canvas.height = height;
 
+        // Se for PNG ou WEBP, garantir que o fundo seja transparente antes de desenhar
+        if (file.type === 'image/png' || file.type === 'image/webp') {
+            ctx.clearRect(0, 0, width, height); // Limpa o canvas (garante transparência)
+        }
+
         // Desenhar imagem redimensionada
         ctx.drawImage(img, 0, 0, width, height);
 
+        // Determinar o tipo de saída: usar o tipo original se for PNG/WEBP, senão usar JPEG
+        const outputMimeType = (file.type === 'image/png' || file.type === 'image/webp')
+            ? file.type
+            : 'image/jpeg';
+
         // Converter para base64 com compressão
-        const resizedBase64 = canvas.toDataURL('image/jpeg', config.quality);
+        const resizedBase64 = canvas.toDataURL(outputMimeType, config.quality);
         resolve(resizedBase64);
       };
 
