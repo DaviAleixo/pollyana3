@@ -104,7 +104,7 @@ function App() {
                 onSortChange={setSortOption}
               />
               
-              <div className="pt-[164px] lg:pt-[164px]"> {/* Ajustado padding superior para 164px */}
+              <div className="pt-[152px] lg:pt-[132px]"> {/* Revertido para pt-[152px] (mobile) e lg:pt-[132px] (desktop) */}
                 
                 <ProductCatalog
                   allProducts={allProducts}
@@ -137,7 +137,7 @@ function App() {
               onSelectCategory={handleSelectCategory}
               selectedCategoryId={selectedCategory}
             />
-            <div className="pt-[104px] lg:pt-16"> {/* Ajustado padding superior para 104px no mobile */}
+            <div className="pt-[104px] lg:pt-16"> {/* Mantido o padding do carrinho */}
               <CartPage />
             </div>
             <WhatsAppButton />

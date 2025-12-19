@@ -8,6 +8,7 @@ const STORAGE_KEYS = {
   STOCK_HISTORY: 'pollyana_stock_history',
   SHIPPING_CONFIG: 'pollyana_shipping_config',
   BANNERS: 'pollyana_banners', // Nova chave para banners
+  CUSTOM_LOGO_URL: 'pollyana_custom_logo_url', // Nova chave para a URL da logo
 } as const;
 
 // Interface para garantir type-safety nas operações de storage

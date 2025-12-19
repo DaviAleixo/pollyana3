@@ -3,7 +3,8 @@ import { Link } from 'react-router-dom';
 import { ShoppingBag, Menu, Filter } from 'lucide-react';
 import { cartService } from '../services/cart.service';
 import SearchBar from './SearchBar';
-import logoImage from '/attached_assets/WhatsApp_Image_2025-11-25_at_15.53.40-removebg-preview_1765314447113.png';
+import defaultLogoImage from '/attached_assets/WhatsApp_Image_2025-11-25_at_15.53.40-removebg-preview_1765314447113.png';
+import { storageService, STORAGE_KEYS } from '../services/storage.service'; // Importar storageService
 
 interface NavbarProps {
   onMenuToggle: () => void;
@@ -15,6 +16,7 @@ interface NavbarProps {
 export default function Navbar({ onMenuToggle, searchTerm, onSearchTermChange, onFilterToggle }: NavbarProps) {
   const [totalItemsInCart, setTotalItemsInCart] = useState(0);
   const [isScrolled, setIsScrolled] = useState(false);
+  const [logoUrl, setLogoUrl] = useState(defaultLogoImage); // Novo estado para a URL da logo
 
   useEffect(() => {
     const updateCartCount = () => {
@@ -24,14 +26,22 @@ export default function Navbar({ onMenuToggle, searchTerm, onSearchTermChange, o
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 10);
     };
+    
+    const loadLogo = () => {
+      const customLogo = storageService.get<string>(STORAGE_KEYS.CUSTOM_LOGO_URL);
+      setLogoUrl(customLogo || defaultLogoImage);
+    };
 
+    loadLogo();
     updateCartCount();
     window.addEventListener('scroll', handleScroll);
     window.addEventListener('storage', updateCartCount);
+    window.addEventListener('storage', loadLogo); // Adicionar listener para a logo
 
     return () => {
       window.removeEventListener('scroll', handleScroll);
       window.removeEventListener('storage', updateCartCount);
+      window.removeEventListener('storage', loadLogo);
     };
   }, []);
 
@@ -54,9 +64,9 @@ export default function Navbar({ onMenuToggle, searchTerm, onSearchTermChange, o
 
           <Link to="/" className="flex-1 flex justify-center lg:flex-none lg:justify-start" data-testid="link-home">
             <img
-              src={logoImage}
+              src={logoUrl} // Usar o estado da URL
               alt="Pollyana Basic Chic"
-              className="h-20 md:h-24 w-auto object-contain"
+              className="h-16 md:h-20 w-auto object-contain" // Revertido para h-16 md:h-20
             />
           </Link>
 
@@ -91,7 +101,7 @@ export default function Navbar({ onMenuToggle, searchTerm, onSearchTermChange, o
         </div>
 
         {/* Linha 2 (Mobile Search Bar and Filter Button) */}
-        <div className="lg:hidden px-4 pb-3 max-w-7xl mx-auto flex items-center gap-2 border-t border-gray-100">
+        <div className="lg:hidden px-4 pb-3 max-w-7xl mx-auto flex items-center justify-between gap-4 border-t border-gray-100 mt-2"> {/* Adicionado mt-2 e ajustado gap/justify */}
           <SearchBar
             onSearchTermChange={onSearchTermChange}
             initialSearchTerm={searchTerm}
