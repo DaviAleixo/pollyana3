@@ -11,10 +11,8 @@ export function isDiscountValid(product: Product): boolean {
   }
 
   if (product.discountExpiresAt) {
-    // Adiciona 'Z' para garantir que seja interpretado como UTC,
-    // o que é necessário para que o cálculo de diferença seja consistente,
-    // já que o Supabase armazena a string ISO sem fuso horário.
-    const expirationDate = new Date(product.discountExpiresAt + 'Z'); 
+    // NÃO adiciona 'Z'. Trata a string YYYY-MM-DDTHH:MM:SS como data local.
+    const expirationDate = new Date(product.discountExpiresAt); 
     if (expirationDate < new Date()) {
       return false; // Desconto expirou
     }
@@ -32,7 +30,8 @@ export function isLaunchValid(product: Product): boolean {
     return false;
   }
   if (product.launchExpiresAt) {
-    const expirationDate = new Date(product.launchExpiresAt + 'Z'); // Adiciona 'Z' para consistência
+    // NÃO adiciona 'Z'. Trata a string YYYY-MM-DDTHH:MM:SS como data local.
+    const expirationDate = new Date(product.launchExpiresAt); 
     if (expirationDate < new Date()) {
       return false; // Lançamento expirado
     }
@@ -63,28 +62,15 @@ export function calculateDiscountedPrice(product: Product): number {
 }
 
 /**
- * Calcula a economia gerada pelo desconto.
- * @param product O objeto Product.
- * @returns O valor da economia.
- */
-export function calculateSavings(product: Product): number {
-  if (!isDiscountValid(product)) {
-    return 0;
-  }
-  return product.preco - calculateDiscountedPrice(product);
-}
-
-/**
  * Formata o tempo restante para a expiração do desconto.
- * @param expirationDateString A data de expiração no formato ISO string.
+ * @param expirationDateString A data de expiração no formato ISO string (local).
  * @returns Uma string formatada (ex: "2d 14h 33m") ou null se expirado/inválido.
  */
 export function formatCountdown(expirationDateString?: string): string | null {
   if (!expirationDateString) return null;
 
-  // Adiciona 'Z' para garantir que a string ISO sem fuso horário seja tratada como UTC
-  // Isso é crucial para que o cálculo de diferença seja preciso, pois o Supabase armazena a string sem fuso.
-  const expirationDate = new Date(expirationDateString + 'Z'); 
+  // NÃO adiciona 'Z'. Trata a string YYYY-MM-DDTHH:MM:SS como data local.
+  const expirationDate = new Date(expirationDateString); 
   const now = new Date();
   const diff = expirationDate.getTime() - now.getTime();
 

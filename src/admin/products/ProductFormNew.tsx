@@ -11,19 +11,23 @@ import { calculateDiscountedPrice } from '../../utils/productUtils';
 import { NumericFormat } from 'react-number-format'; // Importar NumericFormat
 
 // Função auxiliar para formatar a data ISO para o input datetime-local
+// Agora, apenas extrai a parte YYYY-MM-DDTHH:MM da string ISO, sem conversão de fuso.
 const formatIsoToLocal = (isoString: string | undefined): string => {
   if (!isoString) return '';
-  const date = new Date(isoString);
-  // Ajusta para o fuso horário local para que o input exiba a hora correta
-  date.setMinutes(date.getMinutes() - date.getTimezoneOffset());
-  return date.toISOString().slice(0, 16);
+  // Se a string já estiver no formato YYYY-MM-DDTHH:MM (sem segundos/Z), retorna ela mesma.
+  if (isoString.length === 16 && isoString.includes('T')) return isoString;
+  
+  // Se for uma string ISO completa (com segundos e Z), remove o fuso e segundos.
+  // Isso é um hack para lidar com o que o Supabase armazena (ISO sem fuso, mas com segundos).
+  return isoString.slice(0, 16);
 };
 
-// Função auxiliar para converter a string local do input de volta para ISO (sem offset)
+// Função auxiliar para converter a string local do input de volta para o formato de armazenamento
+// Armazenamos no formato YYYY-MM-DDTHH:MM:00 (sem Z) para ser tratado como data local.
 const formatLocalToIso = (localString: string): string => {
   if (!localString) return '';
-  // Cria a data localmente e salva como ISO, mas sem o 'Z' (UTC), para que o banco salve o valor exato
-  return new Date(localString).toISOString().slice(0, 19);
+  // Adiciona segundos para consistência, mas mantém o formato local (sem 'Z')
+  return `${localString}:00`;
 };
 
 
@@ -429,6 +433,7 @@ useEffect(() => {
         alert('A data de expiração do desconto é obrigatória quando o desconto está ativo.');
         return;
       }
+      // Validação de data futura usando a string local
       if (new Date(discountExpiresAt) < new Date()) {
         alert('A data de expiração do desconto deve ser no futuro.');
         return;
@@ -821,7 +826,7 @@ useEffect(() => {
                       />
                       <button
                         type="button"
-                        onClick={handleRemoveNewCustomColorImage}
+                        onClick={() => handleRemoveNewCustomColorImage}
                         className="absolute -top-2 -right-2 bg-red-600 text-white p-1 hover:bg-red-700 transition-colors"
                         title="Remover imagem"
                       >
@@ -1018,7 +1023,7 @@ useEffect(() => {
                     />
                     {formData.preco > 0 && (
                       <p className="text-xs text-gray-500 mt-1">
-                        Preço final estimado: R$ {calculateDiscountedPrice({ ...formData, id: 0, estoque: 0, discountActive: true, discountType, discountValue, discountExpiresAt: '2100-01-01T00:00:00Z' }).toFixed(2)}
+                        Preço final estimado: R$ {calculateDiscountedPrice({ ...formData, id: 0, estoque: 0, discountActive: true, discountType, discountValue, discountExpiresAt: '2100-01-01T00:00:00' }).toFixed(2)}
                       </p>
                     )}
                   </div>
