@@ -40,6 +40,7 @@ export interface Product {
   cores?: ProductColor[];
   variants?: ProductVariant[];
   imagesRequiredForColors?: boolean; // Nova propriedade
+  order: number; // Ordem de exibição
 
   // Novas propriedades para desconto
   discountActive?: boolean;
