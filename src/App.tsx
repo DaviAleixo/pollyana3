@@ -1,5 +1,5 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import ProductCatalog from './components/ProductCatalog';
 import Benefits from './components/Benefits';
 import Footer from './components/Footer';
@@ -38,17 +38,22 @@ function App() {
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [sortOption, setSortOption] = useState<SortOption>('default'); // NEW STATE
 
-  useEffect(() => {
-    const loadData = async () => {
-      await initializeData();
-      authService.initialize();
-      const fetchedCategories = await categoriesService.getAll();
-      setCategories(fetchedCategories.filter(c => c.visivel));
-      const fetchedProducts = await productsService.getVisible();
-      setAllProducts(fetchedProducts);
-    };
-    loadData();
+  const loadInitialData = useCallback(async () => {
+    await initializeData();
+    authService.initialize();
+    const fetchedCategories = await categoriesService.getAll();
+    setCategories(fetchedCategories.filter(c => c.visivel));
+    const fetchedProducts = await productsService.getVisible();
+    setAllProducts(fetchedProducts);
   }, []);
+
+  useEffect(() => {
+    loadInitialData();
+    
+    // Adiciona listener para recarregar dados quando o storage muda (útil após salvar no admin)
+    window.addEventListener('storage', loadInitialData);
+    return () => window.removeEventListener('storage', loadInitialData);
+  }, [loadInitialData]);
 
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
