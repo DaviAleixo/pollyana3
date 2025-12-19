@@ -41,20 +41,24 @@ export default function Settings() {
     let successMessages: string[] = [];
     let errorMessages: string[] = [];
 
-    // Tenta atualizar o nome de usuário
-    if (newUsername.trim() !== '' && newUsername.trim() !== currentUsername) {
-      authService.setUsername(newUsername.trim());
-      setCurrentUsername(newUsername.trim());
-      setNewUsername('');
-      successMessages.push('Usuário atualizado com sucesso!');
-      changesMade = true;
-    } else if (newUsername.trim() === currentUsername) {
-      errorMessages.push('O novo usuário é igual ao atual.');
+    // 1. Tenta atualizar o nome de usuário (Opcional)
+    if (newUsername.trim() !== '') {
+      if (newUsername.trim() !== currentUsername) {
+        authService.setUsername(newUsername.trim());
+        setCurrentUsername(newUsername.trim());
+        setNewUsername('');
+        successMessages.push('Usuário atualizado com sucesso!');
+        changesMade = true;
+      } else {
+        errorMessages.push('O novo usuário é igual ao atual.');
+      }
     }
 
-    // Tenta atualizar a senha
-    if (newPassword.trim() !== '') {
-      if (newPassword !== confirmNewPassword) {
+    // 2. Tenta atualizar a senha (Obrigatório se preenchida)
+    if (newPassword.trim() !== '' || confirmNewPassword.trim() !== '') {
+      if (newPassword.trim() === '' || confirmNewPassword.trim() === '') {
+        errorMessages.push('Nova senha e Confirmação de Senha são obrigatórias para alterar a senha.');
+      } else if (newPassword !== confirmNewPassword) {
         errorMessages.push('A nova senha e a confirmação não coincidem.');
       } else {
         authService.setPassword(newPassword);
@@ -63,14 +67,12 @@ export default function Settings() {
         successMessages.push('Senha atualizada com sucesso!');
         changesMade = true;
       }
-    } else if (confirmNewPassword.trim() !== '') {
-        errorMessages.push('Por favor, preencha a nova senha.');
     }
 
-    if (successMessages.length > 0) {
-      setMessage({ type: 'success', text: successMessages.join(' ') });
-    } else if (errorMessages.length > 0) {
+    if (errorMessages.length > 0) {
       setMessage({ type: 'error', text: errorMessages.join(' ') });
+    } else if (successMessages.length > 0) {
+      setMessage({ type: 'success', text: successMessages.join(' ') });
     } else if (!changesMade) {
       setMessage({ type: 'error', text: 'Nenhuma alteração foi feita. Preencha os campos que deseja atualizar.' });
     }
@@ -89,13 +91,18 @@ export default function Settings() {
       return;
     }
 
-    await shippingService.updateConfig({
-      storeCity: storeCity.trim(),
-      localDeliveryCost: localDeliveryCost,
-      standardShippingCost: standardShippingCost,
-      storePickupCost: storePickupCost, // Salvar novo custo
-    });
-    setShippingMessage({ type: 'success', text: 'Configurações de frete salvas com sucesso!' });
+    try {
+        await shippingService.updateConfig({
+            storeCity: storeCity.trim(),
+            localDeliveryCost: localDeliveryCost,
+            standardShippingCost: standardShippingCost,
+            storePickupCost: storePickupCost, // Salvar novo custo
+        });
+        setShippingMessage({ type: 'success', text: 'Configurações de frete salvas com sucesso!' });
+    } catch (error) {
+        console.error("Erro ao salvar configurações de frete:", error);
+        setShippingMessage({ type: 'error', text: 'Erro ao salvar configurações de frete. Verifique o console.' });
+    }
   };
 
   return (
@@ -138,7 +145,7 @@ export default function Settings() {
             />
           </div>
 
-          {/* Nova Senha (Opcional) */}
+          {/* Nova Senha (Opcional, mas exige confirmação) */}
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-2">
               Nova Senha (opcional)
@@ -148,11 +155,11 @@ export default function Settings() {
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
               className="w-full border border-gray-300 px-4 py-2 focus:outline-none focus:border-black"
-              placeholder="Deixe em branco para não alterar"
+              placeholder="Preencha para alterar a senha"
             />
           </div>
 
-          {/* Confirmar Nova Senha (Opcional) */}
+          {/* Confirmar Nova Senha (Opcional, mas exige confirmação) */}
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-2">
               Confirmar Nova Senha (opcional)
@@ -162,7 +169,7 @@ export default function Settings() {
               value={confirmNewPassword}
               onChange={(e) => setConfirmNewPassword(e.target.value)}
               className="w-full border border-gray-300 px-4 py-2 focus:outline-none focus:border-black"
-              placeholder="Deixe em branco para não alterar"
+              placeholder="Confirme a nova senha"
             />
           </div>
         </div>
