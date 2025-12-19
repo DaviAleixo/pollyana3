@@ -229,7 +229,7 @@ export default function ProductCatalog({ allProducts, categories, selectedCatego
                   className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/20 hover:bg-white/40 backdrop-blur-sm p-3 transition-all duration-300 rounded-full z-10"
                   aria-label="Próximo banner"
                 >
-                  <ChevronRight className="w-6 h-6 text-white" />
+                <ChevronRight className="w-6 h-6 text-white" />
                 </button>
               </>
             )}
@@ -281,11 +281,11 @@ export default function ProductCatalog({ allProducts, categories, selectedCatego
                   className="group bg-white border border-gray-200 overflow-hidden hover:shadow-xl transition-shadow duration-300 flex flex-col rounded-lg"
                 >
                   {/* Imagem do produto - proporção fixa e padronizada */}
-                  <div className="relative w-full aspect-square overflow-hidden bg-gray-100 flex-shrink-0">
+                  <div className="relative w-full aspect-square overflow-hidden bg-gray-100 flex-shrink-0 flex items-center justify-center"> {/* Adicionado flex items-center justify-center */}
                     <img
                       src={product.imagem || 'https://via.placeholder.com/600x600?text=Sem+Imagem'}
                       alt={product.nome}
-                      className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      className="w-full h-full object-contain transition-transform duration-500" // Alterado para object-contain e removido group-hover:scale-105
                       onError={(e) => {
                         (e.target as HTMLImageElement).src = 'https://via.placeholder.com/600x600?text=Sem+Imagem';
                       }}

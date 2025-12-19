@@ -23,11 +23,11 @@ export default function LaunchProductCard({ product, onOpenModal }: LaunchProduc
       className="group bg-white border border-gray-200 overflow-hidden hover:shadow-xl transition-shadow duration-300 flex flex-col rounded-lg w-[250px] sm:w-[300px] flex-shrink-0 snap-center"
     >
       {/* Imagem do produto */}
-      <div className="relative w-full aspect-square overflow-hidden bg-gray-100 flex-shrink-0">
+      <div className="relative w-full aspect-square overflow-hidden bg-gray-100 flex-shrink-0 flex items-center justify-center"> {/* Adicionado flex items-center justify-center */}
         <img
           src={product.imagem || 'https://via.placeholder.com/600x600?text=Sem+Imagem'}
           alt={product.nome}
-          className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+          className="w-full h-full object-contain transition-transform duration-500" // Alterado para object-contain e removido group-hover:scale-105
           onError={(e) => {
             (e.target as HTMLImageElement).src = 'https://via.placeholder.com/600x600?text=Sem+Imagem';
           }}
