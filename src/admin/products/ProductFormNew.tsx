@@ -111,7 +111,7 @@ useEffect(() => {
             if (product.cores.some(c => c.isCustom)) setCustomColorsEnabled(true);
           }
           if (product.variants) setVariants(product.variants);
-          if (product.imagesRequiredForColors !== undefined) setImagesRequiredForColors(product.imagesRequiredForColors);
+          setImagesRequiredForColors(product.imagesRequiredForColors || false);
 
           setDiscountActive(product.discountActive || false);
           setDiscountType(product.discountType || 'percentage');
@@ -439,7 +439,6 @@ useEffect(() => {
         ...formData,
         id: 0, // ID temporário
         estoque: 0, // Adicionado estoque para satisfazer o tipo Product
-        order: 0, // Adicionado order para satisfazer o tipo Product
         discountActive,
         discountType,
         discountValue,
@@ -461,8 +460,7 @@ useEffect(() => {
 
     const estoqueTotal = variants.reduce((sum, v) => sum + v.estoque, 0);
 
-    // Omitindo 'order' na criação, pois o service irá calcular
-    const productData = {
+    const productData: Product = {
       ...formData,
       estoque: estoqueTotal, // O estoque total é calculado a partir das variantes
       tipoTamanho,
@@ -477,6 +475,7 @@ useEffect(() => {
       // Dados de lançamento
       isLaunch: isLaunch,
       launchExpiresAt: isLaunch && launchExpiresAt ? launchExpiresAt : undefined,
+      // launchOrder removido
     };
 
     console.log('ProductFormNew.handleSubmit() - Product data being saved:', {
@@ -486,14 +485,13 @@ useEffect(() => {
       estoque: productData.estoque,
       isLaunch: productData.isLaunch,
       launchExpiresAt: productData.launchExpiresAt,
+      // launchOrder removido
       // ... other relevant fields
     });
 
     if (isEditing && id) {
-      // Se estiver editando, passamos o Partial<Product>
       productsService.update(parseInt(id), productData);
     } else {
-      // Se estiver criando, passamos o Omit<Product, 'id' | 'order'>
       productsService.create(productData);
     }
 
@@ -1020,7 +1018,7 @@ useEffect(() => {
                     />
                     {formData.preco > 0 && (
                       <p className="text-xs text-gray-500 mt-1">
-                        Preço final estimado: R$ {calculateDiscountedPrice({ ...formData, id: 0, estoque: 0, order: 0, discountActive: true, discountType, discountValue, discountExpiresAt: '2100-01-01T00:00:00Z' }).toFixed(2)}
+                        Preço final estimado: R$ {calculateDiscountedPrice({ ...formData, id: 0, estoque: 0, discountActive: true, discountType, discountValue, discountExpiresAt: '2100-01-01T00:00:00Z' }).toFixed(2)}
                       </p>
                     )}
                   </div>

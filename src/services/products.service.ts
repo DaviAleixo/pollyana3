@@ -27,7 +27,6 @@ class ProductsService {
       discountExpiresAt: dbProduct.discount_expires_at,
       isLaunch: dbProduct.is_launch,
       launchExpiresAt: dbProduct.launch_expires_at,
-      order: dbProduct.order ?? 0, // Mapear a ordem
     };
   }
 
@@ -50,7 +49,6 @@ class ProductsService {
     if (product.discountExpiresAt !== undefined) dbData.discount_expires_at = product.discountExpiresAt;
     if (product.isLaunch !== undefined) dbData.is_launch = product.isLaunch;
     if (product.launchExpiresAt !== undefined) dbData.launch_expires_at = product.launchExpiresAt;
-    if (product.order !== undefined) dbData.order = product.order; // Mapear a ordem
     return dbData;
   }
 
@@ -100,7 +98,7 @@ class ProductsService {
     const { data, error } = await supabase
       .from('products')
       .select('*')
-      .order('order', { ascending: true }); // Ordenar por 'order'
+      .order('id', { ascending: false });
 
     if (error) {
       console.error('Erro ao buscar produtos:', error);
@@ -127,7 +125,7 @@ class ProductsService {
       .select('*')
       .eq('visivel', true)
       .eq('ativo', true)
-      .order('order', { ascending: true }); // Ordenar por 'order'
+      .order('id', { ascending: false });
 
     if (error) {
       console.error('Erro ao buscar produtos visíveis:', error);
@@ -169,7 +167,7 @@ class ProductsService {
       .eq('is_launch', true)
       .eq('ativo', true)
       .eq('visivel', true)
-      .order('id', { ascending: false }); // Lançamentos são ordenados por ID (mais recente)
+      .order('id', { ascending: false });
 
     if (error) {
       console.error('Erro ao buscar lançamentos:', error);
@@ -211,13 +209,8 @@ class ProductsService {
   }
 
   // Criar novo produto
-  async create(productData: Omit<Product, 'id' | 'order'>): Promise<Product | null> {
-    // 1. Determinar a próxima ordem (último + 1)
-    const allProducts = await this.getAll();
-    const maxOrder = allProducts.length > 0 ? Math.max(...allProducts.map(p => p.order)) : 0;
-    const newOrder = maxOrder + 1;
-
-    const dbProduct = this.mapToDB({ ...productData, order: newOrder });
+  async create(productData: Omit<Product, 'id'>): Promise<Product | null> {
+    const dbProduct = this.mapToDB(productData);
 
     const { data, error } = await supabase
       .from('products')
@@ -351,7 +344,7 @@ class ProductsService {
       .from('products')
       .select('*')
       .in('categoria_id', categoryIdsToFilter)
-      .order('order', { ascending: true }); // Ordenar por 'order'
+      .order('id', { ascending: false });
 
     if (error) {
       console.error('Erro ao buscar produtos por categoria:', error);
@@ -370,14 +363,6 @@ class ProductsService {
 
     console.log(`ProductsService.getByCategory(${categoryId}) - Found ${products.length} products.`);
     return products;
-  }
-
-  // Função para reordenar produtos
-  async reorder(productId: number, newOrder: number): Promise<void> {
-    await supabase
-      .from("products")
-      .update({ order: newOrder })
-      .eq("id", productId);
   }
 
   // Inicializar produtos mockados
