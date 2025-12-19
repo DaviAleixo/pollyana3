@@ -37,10 +37,12 @@ export default function Navbar({ onMenuToggle, searchTerm, onSearchTermChange, o
 
   return (
     <>
-      <nav className={`fixed top-0 left-0 w-full bg-white z-40 py-2 px-4 transition-all duration-300 ${
+      {/* Container principal da Navbar (Fixo no topo) */}
+      <nav className={`fixed top-0 left-0 w-full bg-white z-40 transition-all duration-300 ${
         isScrolled ? 'shadow-md' : ''
       }`}>
-        <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
+        {/* Linha 1: Logo, Busca (Desktop), Ícones */}
+        <div className="max-w-7xl mx-auto flex items-center justify-between gap-4 py-2 px-4">
           <button
             onClick={onMenuToggle}
             className="p-2 hover:bg-gray-100 rounded-full transition-colors lg:hidden flex-shrink-0"
@@ -54,7 +56,7 @@ export default function Navbar({ onMenuToggle, searchTerm, onSearchTermChange, o
             <img
               src={logoImage}
               alt="Pollyana Basic Chic"
-              className="h-16 md:h-20 w-auto object-contain" // Aumentado o tamanho da logo
+              className="h-16 md:h-20 w-auto object-contain"
             />
           </Link>
 
@@ -66,9 +68,9 @@ export default function Navbar({ onMenuToggle, searchTerm, onSearchTermChange, o
             />
           </div>
 
-          {/* Ícones de Ação (Desktop) */}
+          {/* Ícones de Ação */}
           <div className="flex items-center gap-2 flex-shrink-0">
-            {/* Botão de Filtro (Desktop Only) */}
+            {/* Botão de Filtro (Desktop Only) - Movido para a linha 2 em mobile */}
             <button
               onClick={onFilterToggle}
               className="p-2 hover:bg-gray-100 rounded-full transition-colors hidden lg:block"
@@ -88,14 +90,13 @@ export default function Navbar({ onMenuToggle, searchTerm, onSearchTermChange, o
           </div>
         </div>
 
-        {/* Mobile Search Bar and Filter Button */}
-        <div className="lg:hidden px-2 pb-2 pt-3 max-w-7xl mx-auto flex items-center gap-2">
+        {/* Linha 2 (Mobile Search Bar and Filter Button) */}
+        <div className="lg:hidden px-4 pb-3 max-w-7xl mx-auto flex items-center gap-2 border-t border-gray-100">
           <SearchBar
             onSearchTermChange={onSearchTermChange}
             initialSearchTerm={searchTerm}
             className="flex-1"
           />
-          {/* Ajustado o padding e o tamanho para ser visualmente similar ao ícone do carrinho */}
           <button
             onClick={onFilterToggle}
             className="p-3 hover:bg-gray-100 rounded-full transition-colors flex-shrink-0"

@@ -99,7 +99,7 @@ function App() {
                 onSortChange={setSortOption}
               />
               
-              <div className="pt-[136px] lg:pt-28">
+              <div className="pt-[136px] lg:pt-[136px]"> {/* Ajustado lg:pt-[136px] */}
                 
                 <ProductCatalog
                   allProducts={allProducts}
