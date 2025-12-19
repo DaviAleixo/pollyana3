@@ -8,7 +8,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { ChevronDown } from "lucide-react';
+import { ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Category } from "../types";
 import { categoriesService } from "../services/categories.service";
