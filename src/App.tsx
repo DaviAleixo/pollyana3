@@ -23,7 +23,7 @@ import BannerForm from './admin/banners/BannerForm';
 import ProtectedRoute from './components/ProtectedRoute';
 import WhatsAppButton from './components/WhatsAppButton';
 import MobileFilterDrawer from './components/MobileFilterDrawer';
-import { initializeDataWithMocks } from './utils/initializeData'; // MUDANÇA AQUI
+import { initializeData } from './utils/initializeData';
 import { authService } from './services/auth.service';
 import { categoriesService } from './services/categories.service';
 import { productsService } from './services/products.service';
@@ -40,7 +40,7 @@ function App() {
 
   useEffect(() => {
     const loadData = async () => {
-      await initializeDataWithMocks(); // MUDANÇA AQUI
+      await initializeData();
       authService.initialize();
       const fetchedCategories = await categoriesService.getAll();
       setCategories(fetchedCategories.filter(c => c.visivel));
