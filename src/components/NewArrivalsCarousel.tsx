@@ -23,7 +23,13 @@ export default function NewArrivalsCarousel() {
         const validLaunches = Array.isArray(fetchedLaunches) ? fetchedLaunches : [];
         
         setLaunches(validLaunches);
-        console.log(`[NewArrivalsCarousel] Produtos de lançamento carregados: ${validLaunches.length}`, validLaunches.map(p => ({ id: p.id, nome: p.nome, isLaunch: p.isLaunch, expires: p.launchExpiresAt })));
+        
+        // Log detalhado para depuração
+        console.log(`[NewArrivalsCarousel] Produtos de lançamento carregados: ${validLaunches.length}`);
+        validLaunches.forEach(p => {
+          console.log(`  - Produto ID ${p.id} (${p.nome}): Expira em ${p.launchExpiresAt || 'N/A'}`);
+        });
+        
       } catch (error) {
         console.error('Erro ao carregar lançamentos:', error);
         setLaunches([]);
