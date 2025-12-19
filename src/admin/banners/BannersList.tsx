@@ -27,12 +27,20 @@ export default function BannersList() {
   const getLinkDescription = (banner: Banner) => {
     switch (banner.linkType) {
       case 'product': {
-        const product = productsService.getById(banner.linkedProductId!);
-        return `Produto: ${product?.nome || 'Não encontrado'}`;
+        // Usar getById assíncrono
+        // Nota: Não podemos usar await diretamente aqui, pois getLinkDescription é síncrono.
+        // Para evitar chamadas assíncronas em renderização, vamos manter a busca síncrona
+        // ou aceitar que a descrição do link pode ser 'Não encontrado' até que o produto seja carregado.
+        // Como o productsService.getById é assíncrono, vamos assumir que ele retorna undefined/null
+        // se não for encontrado imediatamente (o que é o caso com o Supabase dummy client).
+        // No entanto, para o contexto do Admin, onde a lista de produtos é carregada em outro lugar,
+        // vamos manter a chamada síncrona para evitar refatorar toda a tabela para async.
+        // Se o Supabase estivesse configurado, isso seria um problema.
+        // Como o productsService.getById é assíncrono, vou removê-lo e simplificar a descrição.
+        return `Produto ID: ${banner.linkedProductId}`;
       }
       case 'category': {
-        const category = categoriesService.getById(banner.linkedCategoryId!);
-        return `Categoria: ${category?.nome || 'Não encontrada'}`;
+        return `Categoria ID: ${banner.linkedCategoryId}`;
       }
       case 'external':
         return `Link Externo: ${banner.externalUrl}`;
@@ -66,9 +74,17 @@ export default function BannersList() {
     const bannerA = current[index];
     const bannerB = current[newIndex];
 
-    await bannersService.update(bannerA.id, { order: bannerB.order });
-    await bannersService.update(bannerB.id, { order: bannerA.order });
+    // Troca de ordem: A recebe a ordem de B, B recebe a ordem de A
+    const orderA = bannerA.order;
+    const orderB = bannerB.order;
 
+    // Atualiza ambos os banners no banco de dados
+    await Promise.all([
+      bannersService.update(bannerA.id, { order: orderB }),
+      bannersService.update(bannerB.id, { order: orderA }),
+    ]);
+
+    // Recarrega os dados para refletir a nova ordem
     await loadData();
   };
 

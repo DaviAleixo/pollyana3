@@ -209,31 +209,10 @@ private mapFromDB(db: any): Category {
     return true;
   }
 
-  // Reordenar categorias
+  // Reordenar categorias - Simplificado para apenas atualizar o item movido
   async reorder(categoryId: number, newOrder: number, newParentId: number | null): Promise<void> {
-    const categoryToMove = await this.getById(categoryId);
-    if (!categoryToMove) return;
-
-    const oldSiblings = await this.getSubcategories(categoryToMove.parentId);
-    for (const sibling of oldSiblings) {
-      if (sibling.id !== categoryId && sibling.order > categoryToMove.order) {
-        await supabase
-          .from("categories")
-          .update({ order: sibling.order - 1 })
-          .eq("id", sibling.id);
-      }
-    }
-
-    const newSiblings = await this.getSubcategories(newParentId);
-    for (const sibling of newSiblings) {
-      if (sibling.id !== categoryId && sibling.order >= newOrder) {
-        await supabase
-          .from("categories")
-          .update({ order: sibling.order + 1 })
-          .eq("id", sibling.id);
-      }
-    }
-
+    // O frontend já calculou a troca de ordem entre os dois itens.
+    // Aqui, apenas persistimos a nova ordem e o novo pai para o item em questão.
     await supabase
       .from("categories")
       .update({ order: newOrder, parent_id: newParentId })

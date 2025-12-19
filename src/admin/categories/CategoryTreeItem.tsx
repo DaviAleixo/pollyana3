@@ -31,10 +31,12 @@ const CategoryTreeItem: React.FC<CategoryTreeItemProps> = ({
   useEffect(() => {
     const loadProductCount = async () => {
       try {
+        // Busca todos os descendentes (incluindo a própria categoria)
         const descendants = await categoriesService.getDescendants(category.id);
         const validDescendants = Array.isArray(descendants) ? descendants : [];
         const descendantIds = validDescendants.map(d => d.id);
         
+        // Filtra produtos que pertencem a qualquer uma dessas categorias
         const allProducts = await productsService.getAll();
         const validProducts = Array.isArray(allProducts) ? allProducts : [];
         
@@ -86,33 +88,42 @@ const CategoryTreeItem: React.FC<CategoryTreeItemProps> = ({
     }
   };
 
-  const handleMoveUp = () => {
-    const siblings = allCategories
+  // Função para encontrar os irmãos ordenados
+  const getSiblings = () => {
+    return allCategories
       .filter(c => c.parentId === category.parentId)
       .sort((a, b) => a.order - b.order);
+  };
+
+  const handleMoveUp = () => {
+    const siblings = getSiblings();
     const currentIndex = siblings.findIndex(s => s.id === category.id);
 
     if (currentIndex > 0) {
       const prevSibling = siblings[currentIndex - 1];
+      
+      // Troca a ordem: A recebe a ordem de B, B recebe a ordem de A
       onMoveCategory(category.id, prevSibling.order, category.parentId);
       onMoveCategory(prevSibling.id, category.order, prevSibling.parentId);
     }
   };
 
   const handleMoveDown = () => {
-    const siblings = allCategories
-      .filter(c => c.parentId === category.parentId)
-      .sort((a, b) => a.order - b.order);
+    const siblings = getSiblings();
     const currentIndex = siblings.findIndex(s => s.id === category.id);
 
     if (currentIndex < siblings.length - 1) {
       const nextSibling = siblings[currentIndex + 1];
+      
+      // Troca a ordem: A recebe a ordem de B, B recebe a ordem de A
       onMoveCategory(category.id, nextSibling.order, category.parentId);
       onMoveCategory(nextSibling.id, category.order, nextSibling.parentId);
     }
   };
 
   const hasChildren = subcategories.length > 0;
+  const siblings = getSiblings();
+  const currentIndex = siblings.findIndex(s => s.id === category.id);
 
   return (
     <>
@@ -173,7 +184,7 @@ const CategoryTreeItem: React.FC<CategoryTreeItemProps> = ({
               <>
                 <button
                   onClick={handleMoveUp}
-                  disabled={category.order === 0}
+                  disabled={currentIndex === 0}
                   className="p-2 text-gray-500 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
                   title="Mover para cima"
                 >
@@ -181,7 +192,7 @@ const CategoryTreeItem: React.FC<CategoryTreeItemProps> = ({
                 </button>
                 <button
                   onClick={handleMoveDown}
-                  disabled={category.order === subcategories.length - 1 && !hasChildren}
+                  disabled={currentIndex === siblings.length - 1}
                   className="p-2 text-gray-500 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
                   title="Mover para baixo"
                 >

@@ -155,6 +155,9 @@ export default function ProductCatalog({ allProducts, categories, selectedCatego
         break;
       case 'category':
         if (banner.linkedCategoryId) {
+          // Se for link de categoria, atualiza a categoria selecionada no App.tsx
+          // Isso é feito indiretamente, pois o CategoryNavigation já lida com a seleção.
+          // Aqui, apenas garantimos o scroll.
           document.getElementById('catalog')?.scrollIntoView({ behavior: 'smooth' });
         }
         break;
@@ -183,11 +186,11 @@ export default function ProductCatalog({ allProducts, categories, selectedCatego
   const shouldShowLaunches = selectedCategory === 1 && searchTerm === '';
 
   return (
-    <section id="catalog" className="bg-white px-4"> {/* Removido py-16 md:py-24 */}
+    <section id="catalog" className="bg-white px-4 mt-8"> {/* Adicionado mt-8 para espaçamento */}
       <div className="max-w-7xl mx-auto">
         {/* Carrossel de Banners */}
         {visibleBanners.length > 0 && (
-          <div className="relative mb-16 group overflow-hidden bg-gray-100 flex flex-col justify-end min-h-[250px] md:min-h-[400px]">
+          <div className="relative mb-24 group overflow-hidden bg-gray-100 flex flex-col justify-end min-h-[250px] md:min-h-[400px]"> {/* Aumentado mb-16 para mb-24 */}
             {visibleBanners.map((banner, index) => (
               <div
                 key={banner.id}
