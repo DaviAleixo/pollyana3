@@ -103,13 +103,7 @@ export default function ProductCatalog({ allProducts, categories, selectedCatego
       });
     }
     
-    // 3. Remover produtos de lançamento do grid principal se estiver na categoria "Todos" e sem busca
-    const shouldShowLaunches = selectedCategory === 1 && searchTerm === '';
-    if (shouldShowLaunches) {
-        currentFiltered = currentFiltered.filter(product => !isLaunchValid(product));
-    }
-
-    // 4. Aplicar ordenação
+    // 3. Aplicar ordenação
     let sortedProducts = [...currentFiltered]; // Cria uma cópia mutável para ordenar
 
     if (sortOption === 'price_asc') {
@@ -120,6 +114,11 @@ export default function ProductCatalog({ allProducts, categories, selectedCatego
       sortedProducts.sort((a, b) => a.nome.localeCompare(b.nome));
     }
     // 'default' não aplica ordenação adicional, mantendo a ordem original após os filtros.
+
+      // 4. Se estiver na categoria "Todos" e houver lançamentos, NÃO remover produtos de lançamento do grid.
+      // if (selectedCategory === 1 && searchTerm === '') {
+      //   sortedProducts = sortedProducts.filter(product => !isLaunchValid(product));
+      // }
 
       setFilteredProducts(sortedProducts);
     };

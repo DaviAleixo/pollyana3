@@ -3,7 +3,6 @@
 
 import { Product, ProductColor, ProductVariant } from '../types';
 import { supabase } from '../lib/supabase';
-import { isLaunchValid } from '../utils/productUtils'; // Importar a validação
 
 class ProductsService {
   // Converte os dados do banco para o formato esperado pela aplicação
@@ -121,21 +120,71 @@ class ProductsService {
 
   // Obter apenas produtos visíveis (para catálogo público)
   async getVisible(): Promise<Product[]> {
-    // Busca todos os produtos e filtra localmente para garantir que o Supabase dummy funcione
-    const allProducts = await this.getAll();
-    return allProducts.filter(p => p.visivel && p.ativo);
+    const { data, error } = await supabase
+      .from('products')
+      .select('*')
+      .eq('visivel', true)
+      .eq('ativo', true)
+      .order('id', { ascending: false });
+
+    if (error) {
+      console.error('Erro ao buscar produtos visíveis:', error);
+      return [];
+    }
+
+    if (!data) return [];
+
+    const products = await Promise.all(
+      data.map(async (dbProduct) => {
+        const colors = await this.getProductColors(dbProduct.id);
+        const variants = await this.getProductVariants(dbProduct.id);
+        return this.mapFromDB(dbProduct, colors, variants);
+      })
+    );
+
+    return products;
+  }
+
+  // Verifica se um produto é um lançamento válido (ativo, marcado como lançamento e não expirado)
+  private isLaunchValid(product: Product): boolean {
+    if (!product.isLaunch || !product.ativo || !product.visivel) {
+      return false;
+    }
+    if (product.launchExpiresAt) {
+      const expirationDate = new Date(product.launchExpiresAt);
+      if (expirationDate < new Date()) {
+        return false;
+      }
+    }
+    return true;
   }
 
   // Obter produtos de lançamento válidos, ordenados por ID (mais recente primeiro)
   async getLaunches(): Promise<Product[]> {
-    // Busca todos os produtos visíveis e filtra localmente
-    const visibleProducts = await this.getVisible();
-    
-    const launches = visibleProducts
-      .filter(p => p.isLaunch)
-      .filter(isLaunchValid); // Usa a função de utilidade para validar a data
+    const { data, error } = await supabase
+      .from('products')
+      .select('*')
+      .eq('is_launch', true)
+      .eq('ativo', true)
+      .eq('visivel', true)
+      .order('id', { ascending: false });
 
-    return launches;
+    if (error) {
+      console.error('Erro ao buscar lançamentos:', error);
+      return [];
+    }
+
+    if (!data) return [];
+
+    const products = await Promise.all(
+      data.map(async (dbProduct) => {
+        const colors = await this.getProductColors(dbProduct.id);
+        const variants = await this.getProductVariants(dbProduct.id);
+        return this.mapFromDB(dbProduct, colors, variants);
+      })
+    );
+
+    return products.filter(this.isLaunchValid);
   }
 
   // Obter produto por ID
@@ -291,10 +340,29 @@ class ProductsService {
     const categoryAndDescendants = await categoriesService.getDescendants(categoryId);
     const categoryIdsToFilter = categoryAndDescendants.map(c => c.id);
 
-    // Busca todos os produtos e filtra localmente
-    const allProducts = await this.getVisible();
+    const { data, error } = await supabase
+      .from('products')
+      .select('*')
+      .in('categoria_id', categoryIdsToFilter)
+      .order('id', { ascending: false });
 
-    return allProducts.filter(p => categoryIdsToFilter.includes(p.categoriaId));
+    if (error) {
+      console.error('Erro ao buscar produtos por categoria:', error);
+      return [];
+    }
+
+    if (!data) return [];
+
+    const products = await Promise.all(
+      data.map(async (dbProduct) => {
+        const colors = await this.getProductColors(dbProduct.id);
+        const variants = await this.getProductVariants(dbProduct.id);
+        return this.mapFromDB(dbProduct, colors, variants);
+      })
+    );
+
+    console.log(`ProductsService.getByCategory(${categoryId}) - Found ${products.length} products.`);
+    return products;
   }
 
   // Inicializar produtos mockados
