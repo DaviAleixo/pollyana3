@@ -219,17 +219,17 @@ export default function ProductCatalog({ allProducts, categories, selectedCatego
               <>
                 <button
                   onClick={(e) => { e.stopPropagation(); prevBanner(); }}
-                  className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/20 hover:bg-white/40 backdrop-blur-sm p-3 transition-all duration-300 rounded-full z-10"
+                  className="absolute left-4 top-1/2 -translate-y-1/2 bg-transparent p-3 transition-all duration-300 rounded-full z-10"
                   aria-label="Banner anterior"
                 >
-                  <ChevronLeft className="w-6 h-6 text-white" />
+                  <ChevronLeft className="w-6 h-6 text-transparent" />
                 </button>
                 <button
                   onClick={(e) => { e.stopPropagation(); nextBanner(); }}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/20 hover:bg-white/40 backdrop-blur-sm p-3 transition-all duration-300 rounded-full z-10"
+                  className="absolute right-4 top-1/2 -translate-y-1/2 bg-transparent p-3 transition-all duration-300 rounded-full z-10"
                   aria-label="Próximo banner"
                 >
-                <ChevronRight className="w-6 h-6 text-white" />
+                <ChevronRight className="w-6 h-6 text-transparent" />
                 </button>
               </>
             )}

@@ -55,7 +55,9 @@ export default function Settings() {
     }
 
     // 2. Tenta atualizar a senha (Obrigatório se preenchida)
-    if (newPassword.trim() !== '' || confirmNewPassword.trim() !== '') {
+    const passwordFieldsFilled = newPassword.trim() !== '' || confirmNewPassword.trim() !== '';
+
+    if (passwordFieldsFilled) {
       if (newPassword.trim() === '' || confirmNewPassword.trim() === '') {
         errorMessages.push('Nova senha e Confirmação de Senha são obrigatórias para alterar a senha.');
       } else if (newPassword !== confirmNewPassword) {
@@ -134,35 +136,35 @@ export default function Settings() {
           {/* Novo Usuário (Opcional) */}
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-2">
-              Novo Usuário (opcional)
+              Novo Nome de Usuário (opcional)
             </label>
             <input
               type="text"
               value={newUsername}
               onChange={(e) => setNewUsername(e.target.value)}
               className="w-full border border-gray-300 px-4 py-2 focus:outline-none focus:border-black"
-              placeholder="Deixe em branco para não alterar"
+              placeholder="Deixe em branco para não alterar o nome de usuário"
             />
           </div>
 
           {/* Nova Senha (Opcional, mas exige confirmação) */}
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-2">
-              Nova Senha (opcional)
+              Nova Senha (Preencha ambos os campos para alterar)
             </label>
             <input
               type="password"
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
               className="w-full border border-gray-300 px-4 py-2 focus:outline-none focus:border-black"
-              placeholder="Preencha para alterar a senha"
+              placeholder="Nova senha"
             />
           </div>
 
           {/* Confirmar Nova Senha (Opcional, mas exige confirmação) */}
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-2">
-              Confirmar Nova Senha (opcional)
+              Confirmar Nova Senha
             </label>
             <input
               type="password"
