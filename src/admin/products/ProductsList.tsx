@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Edit, Trash2, Eye, EyeOff, Power, Package, ArrowUp, ArrowDown } from 'lucide-react';
+import { Edit, Trash2, Eye, EyeOff, Power, Package } from 'lucide-react';
 import { productsService } from '../../services/products.service';
 import { categoriesService } from '../../services/categories.service';
 import { stockService } from '../../services/stock.service';
@@ -27,7 +27,6 @@ export default function ProductsList() {
         categoriesService.getAll()
       ]);
       
-      // O serviço já retorna ordenado por 'order' e depois por 'id'
       setProducts(Array.isArray(productsData) ? productsData : []);
       setCategories(Array.isArray(categoriesData) ? categoriesData : []);
     } catch (error) {
@@ -79,33 +78,6 @@ export default function ProductsList() {
       alert('Erro ao alterar visibilidade do produto');
     }
   };
-
-  // Mover produto para cima/baixo
-  const handleMoveProduct = async (id: number, direction: 'up' | 'down') => {
-    const current = [...products];
-    const index = current.findIndex(p => p.id === id);
-    if (index === -1) return;
-
-    const newIndex = direction === 'up' ? index - 1 : index + 1;
-    if (newIndex < 0 || newIndex >= current.length) return;
-
-    const productA = current[index];
-    const productB = current[newIndex];
-
-    // Troca de ordem: A recebe a ordem de B, B recebe a ordem de A
-    const orderA = productA.order;
-    const orderB = productB.order;
-
-    // Atualiza ambos os produtos no banco de dados
-    await Promise.all([
-      productsService.update(productA.id, { order: orderB }),
-      productsService.update(productB.id, { order: orderA }),
-    ]);
-
-    // Recarrega os dados para refletir a nova ordem
-    await loadData();
-  };
-
 
   if (loading) {
     return (
@@ -160,9 +132,6 @@ export default function ProductsList() {
                 <th className="text-center px-6 py-4 text-sm font-semibold text-gray-700">
                   Visível
                 </th>
-                <th className="text-center px-6 py-4 text-sm font-semibold text-gray-700">
-                  Ordem
-                </th>
                 <th className="text-right px-6 py-4 text-sm font-semibold text-gray-700">
                   Ações
                 </th>
@@ -171,7 +140,7 @@ export default function ProductsList() {
             <tbody className="divide-y divide-gray-200">
               {!Array.isArray(products) || products.length === 0 ? (
                 <tr>
-                  <td colSpan={9} className="text-center py-12">
+                  <td colSpan={8} className="text-center py-12">
                     <div className="text-gray-500">
                       <p className="text-lg font-medium mb-2">
                         Nenhum produto cadastrado
@@ -189,7 +158,7 @@ export default function ProductsList() {
                   </td>
                 </tr>
               ) : (
-                products.map((product, index) => (
+                products.map((product) => (
                   <tr key={product.id} className="hover:bg-gray-50">
                     {/* Imagem */}
                     <td className="px-6 py-4">
@@ -271,31 +240,6 @@ export default function ProductsList() {
                           <EyeOff className="w-5 h-5" />
                         )}
                       </button>
-                    </td>
-                    
-                    {/* Ordem */}
-                    <td className="px-6 py-4 text-center">
-                      <div className="flex items-center justify-center gap-1">
-                        <button
-                          onClick={() => handleMoveProduct(product.id, 'up')}
-                          disabled={index === 0}
-                          className="p-1 text-gray-500 hover:bg-gray-100 disabled:opacity-50"
-                          title="Mover para cima"
-                        >
-                          <ArrowUp className="w-4 h-4" />
-                        </button>
-
-                        <span className="font-semibold">{product.order}</span>
-
-                        <button
-                          onClick={() => handleMoveProduct(product.id, 'down')}
-                          disabled={index === products.length - 1}
-                          className="p-1 text-gray-500 hover:bg-gray-100 disabled:opacity-50"
-                          title="Mover para baixo"
-                        >
-                          <ArrowDown className="w-4 h-4" />
-                        </button>
-                      </div>
                     </td>
 
                     {/* Ações */}
