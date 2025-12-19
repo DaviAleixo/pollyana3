@@ -696,398 +696,401 @@ export default function ProductFormNew() {
 
                 return (
                   <div key={color.nome} className="border-2 border-gray-300 p-3">
-<label className="flex items-center gap-3 cursor-pointer mb-2">
-<input
-type="checkbox"
-checked={isSelected}
-onChange={() => toggleStandardColor(color.nome)}
-className="w-4 h-4"
-/>
-<div
-className="w-6 h-6 rounded-full border border-gray-300"
-style={{ backgroundColor: color.hex }}
-></div>
-<span className="text-sm font-medium">{color.nome}</span>
-</label>
-{isSelected && (
-<div className="mt-3 pt-3 border-t border-gray-200">
-<label className="block text-xs font-semibold text-gray-700 mb-2">
-Imagem para {color.nome} {imagesRequiredForColors && '*'}
-</label>
-{currentColorConfig?.imagem && (
-<div className="mb-2 relative inline-block">
-<img
-src={currentColorConfig.imagem}
-alt={Preview ${color.nome}}
-className="w-20 h-20 object-cover border border-gray-300"
-/>
-<button
-type="button"
-onClick={() => handleRemoveStandardColorImage(color.nome)}
-className="absolute -top-1 -right-1 bg-red-600 text-white p-1 hover:bg-red-700 transition-colors"
-title="Remover imagem"
->
-<X className="w-3 h-3" />
-</button>
-</div>
-)}
-<label className="flex items-center justify-center gap-2 border-2 border-dashed border-gray-300 px-3 py-2 cursor-pointer hover:border-black transition-colors text-xs">
-<Upload className="w-3 h-3" />
-Upload Imagem
-<input
-type="file"
-accept="image/jpeg,image/jpg,image/png,image/webp"
-onChange={(e) => handleStandardColorImageUpload(e, color.nome)}
-className="hidden"
-/>
-</label>
-</div>
-)}
-</div>
-);
-})}
-</div><label className="flex items-center gap-2 mb-4 cursor-pointer">
-          <input
-            type="checkbox"
-            checked={customColorsEnabled}
-            onChange={(e) => setCustomColorsEnabled(e.target.checked)}
-            className="w-4 h-4"
-          />
-          <span className="text-sm font-semibold">Adicionar outras cores (personalizadas)</span>
-        </label>
-
-        {customColorsEnabled && (
-          <div className="border border-gray-300 p-4 bg-gray-50">
-            <h3 className="font-semibold text-gray-900 mb-3">Cores Personalizadas</h3>
-
-            {customColors.length > 0 && (
-              <div className="mb-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {customColors.map((cor) => (
-                  <div 
-                    key={cor.id} 
-                    className={`flex items-center gap-3 border border-gray-300 p-3 bg-white transition-colors duration-500 ${
-                      cor.id === lastAddedCustomColorId ? 'bg-yellow-50' : ''
-                    }`}
-                  >
-                    <div
-                      className="w-16 h-16 flex-shrink-0 border border-gray-200 overflow-hidden"
-                      style={{ backgroundColor: cor.hex || '#CCCCCC' }}
-                    >
-                      {cor.imagem && (
-                        <img src={cor.imagem} alt={cor.nome} className="w-full h-full object-cover" />
-                      )}
-                    </div>
-                    <div className="flex-1">
-                      <p className="font-medium text-gray-900">{cor.nome}</p>
-                      {cor.hex && <p className="text-xs text-gray-500">{cor.hex}</p>}
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveCustomColor(cor.id)}
-                      className="text-red-600 hover:text-red-800"
-                      title="Remover"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                    <label className="flex items-center gap-3 cursor-pointer mb-2">
+                      <input
+                        type="checkbox"
+                        checked={isSelected}
+                        onChange={() => toggleStandardColor(color.nome)}
+                        className="w-4 h-4"
+                      />
+                      <div
+                        className="w-6 h-6 rounded-full border border-gray-300"
+                        style={{ backgroundColor: color.hex }}
+                      ></div>
+                      <span className="text-sm font-medium">{color.nome}</span>
+                    </label>
+                    {isSelected && (
+                      <div className="mt-3 pt-3 border-t border-gray-200">
+                        <label className="block text-xs font-semibold text-gray-700 mb-2">
+                          Imagem para {color.nome} {imagesRequiredForColors && '*'}
+                        </label>
+                        {currentColorConfig?.imagem && (
+                          <div className="mb-2 relative inline-block">
+                            <img
+                              src={currentColorConfig.imagem}
+                              alt={`Preview ${color.nome}`}
+                              className="w-20 h-20 object-cover border border-gray-300"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveStandardColorImage(color.nome)}
+                              className="absolute -top-1 -right-1 bg-red-600 text-white p-1 hover:bg-red-700 transition-colors"
+                              title="Remover imagem"
+                            >
+                              <X className="w-3 h-3" />
+                            </button>
+                          </div>
+                        )}
+                        <label className="flex items-center justify-center gap-2 border-2 border-dashed border-gray-300 px-3 py-2 cursor-pointer hover:border-black transition-colors text-xs">
+                          <Upload className="w-3 h-3" />
+                          Upload Imagem
+                          <input
+                            type="file"
+                            accept="image/jpeg,image/jpg,image/png,image/webp"
+                            onChange={(e) => handleStandardColorImageUpload(e, color.nome)}
+                            className="hidden"
+                          />
+                        </label>
+                      </div>
+                    )}
                   </div>
-                ))}
+                );
+              })}
+            </div>
+            <label className="flex items-center gap-2 mb-4 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={customColorsEnabled}
+                onChange={(e) => setCustomColorsEnabled(e.target.checked)}
+                className="w-4 h-4"
+              />
+              <span className="text-sm font-semibold">Adicionar outras cores (personalizadas)</span>
+            </label>
+
+            {customColorsEnabled && (
+              <div className="border border-gray-300 p-4 bg-gray-50">
+                <h3 className="font-semibold text-gray-900 mb-3">Cores Personalizadas</h3>
+
+                {customColors.length > 0 && (
+                  <div className="mb-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {customColors.map((cor) => (
+                      <div 
+                        key={cor.id} 
+                        className={`flex items-center gap-3 border border-gray-300 p-3 bg-white transition-colors duration-500 ${
+                          cor.id === lastAddedCustomColorId ? 'bg-yellow-50' : ''
+                        }`}
+                      >
+                        <div
+                          className="w-16 h-16 flex-shrink-0 border border-gray-200 overflow-hidden"
+                          style={{ backgroundColor: cor.hex || '#CCCCCC' }}
+                        >
+                          {cor.imagem && (
+                            <img src={cor.imagem} alt={cor.nome} className="w-full h-full object-cover" />
+                          )}
+                        </div>
+                        <div className="flex-1">
+                          <p className="font-medium text-gray-900">{cor.nome}</p>
+                          {cor.hex && <p className="text-xs text-gray-500">{cor.hex}</p>}
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveCustomColor(cor.id)}
+                          className="text-red-600 hover:text-red-800"
+                          title="Remover"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-3">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Nome da Cor *
+                    </label>
+                    <input
+                      type="text"
+                      value={newCustomColor.nome}
+                      onChange={(e) => setNewCustomColor(prev => ({ ...prev, nome: e.target.value }))}
+                      placeholder="Ex: Laranja, Roxo..."
+                      className="w-full border border-gray-300 px-3 py-2 focus:outline-none focus:border-black"
+                      required={customColorsEnabled}
+                    />
+                  </div>
+
+                  <ColorPicker
+                    label="Cor Hexadecimal *"
+                    value={newCustomColor.hex || '#000000'}
+                    onChange={(hex) => setNewCustomColor(prev => ({ ...prev, hex }))}
+                    className="mb-3"
+                  />
+                </div>
+
+                <div className="mb-4">
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Imagem para a Nova Cor Personalizada {imagesRequiredForColors && '*'}
+                  </label>
+                  {newCustomColorImagePreview && (
+                    <div className="mb-4 relative inline-block">
+                      <img
+                        src={newCustomColorImagePreview}
+                        alt="Preview Nova Cor"
+                        className="w-24 h-24 object-cover border border-gray-300"
+                      />
+                      <button
+                        type="button"
+                        onClick={handleRemoveNewCustomColorImage}
+                        className="absolute -top-2 -right-2 bg-red-600 text-white p-1 hover:bg-red-700 transition-colors"
+                        title="Remover imagem"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </div>
+                  )}
+                  <label className="flex items-center justify-center gap-2 border-2 border-dashed border-gray-300 px-3 py-2 cursor-pointer hover:border-black transition-colors text-sm">
+                    <Upload className="w-4 h-4" />
+                    {newCustomColorUploadLoading ? 'Processando...' : 'Upload Imagem'}
+                    <input
+                      type="file"
+                      accept="image/jpeg,image/jpg,image/png,image/webp"
+                      onChange={handleNewCustomColorImageUpload}
+                      className="hidden"
+                      disabled={newCustomColorUploadLoading}
+                    />
+                  </label>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleAddCustomColor}
+                  className="flex items-center gap-2 bg-green-600 text-white px-4 py-2 hover:bg-green-700 transition-colors"
+                >
+                  <Plus className="w-4 h-4" />
+                  Adicionar Cor Personalizada
+                </button>
               </div>
             )}
+          </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-3">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Nome da Cor *
-                </label>
-                <input
-                  type="text"
-                  value={newCustomColor.nome}
-                  onChange={(e) => setNewCustomColor(prev => ({ ...prev, nome: e.target.value }))}
-                  placeholder="Ex: Laranja, Roxo..."
-                  className="w-full border border-gray-300 px-3 py-2 focus:outline-none focus:border-black"
-                  required={customColorsEnabled}
-                />
-              </div>
-
-              <ColorPicker
-                label="Cor Hexadecimal *"
-                value={newCustomColor.hex || '#000000'}
-                onChange={(hex) => setNewCustomColor(prev => ({ ...prev, hex }))}
-                className="mb-3"
-              />
-            </div>
-
-            <div className="mb-4">
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Imagem para a Nova Cor Personalizada {imagesRequiredForColors && '*'}
-              </label>
-              {newCustomColorImagePreview && (
-                <div className="mb-4 relative inline-block">
-                  <img
-                    src={newCustomColorImagePreview}
-                    alt="Preview Nova Cor"
-                    className="w-24 h-24 object-cover border border-gray-300"
-                  />
-                  <button
-                    type="button"
-                    onClick={handleRemoveNewCustomColorImage}
-                    className="absolute -top-2 -right-2 bg-red-600 text-white p-1 hover:bg-red-700 transition-colors"
-                    title="Remover imagem"
-                  >
-                    <X className="w-3 h-3" />
-                  </button>
-                </div>
-              )}
-              <label className="flex items-center justify-center gap-2 border-2 border-dashed border-gray-300 px-3 py-2 cursor-pointer hover:border-black transition-colors text-sm">
-                <Upload className="w-4 h-4" />
-                {newCustomColorUploadLoading ? 'Processando...' : 'Upload Imagem'}
-                <input
-                  type="file"
-                  accept="image/jpeg,image/jpg,image/png,image/webp"
-                  onChange={handleNewCustomColorImageUpload}
-                  className="hidden"
-                  disabled={newCustomColorUploadLoading}
-                />
-              </label>
-            </div>
-
+          <div className="md:col-span-2">
             <button
               type="button"
-              onClick={handleAddCustomColor}
-              className="flex items-center gap-2 bg-green-600 text-white px-4 py-2 hover:bg-green-700 transition-colors"
+              onClick={generateVariants}
+              className="bg-blue-600 text-white px-6 py-2 hover:bg-blue-700 transition-colors font-medium"
             >
-              <Plus className="w-4 h-4" />
-              Adicionar Cor Personalizada
+              Gerar Variações (Cor × Tamanho)
             </button>
+            <p className="text-xs text-gray-500 mt-2">
+              Clique para criar todas as combinações de cor e tamanho. Configure o estoque de cada variação abaixo.
+            </p>
           </div>
-        )}
-      </div>
 
-      <div className="md:col-span-2">
-        <button
-          type="button"
-          onClick={generateVariants}
-          className="bg-blue-600 text-white px-6 py-2 hover:bg-blue-700 transition-colors font-medium"
-        >
-          Gerar Variações (Cor × Tamanho)
-        </button>
-        <p className="text-xs text-gray-500 mt-2">
-          Clique para criar todas as combinações de cor e tamanho. Configure o estoque de cada variação abaixo.
-        </p>
-      </div>
+          {variants.length > 0 && (
+            <div className="md:col-span-2">
+              <h3 className="text-lg font-semibold text-gray-900 mb-3">
+                Variações e Estoque ({variants.length})
+              </h3>
+              <div className="border border-gray-300 max-h-96 overflow-y-auto">
+                <table className="w-full">
+                  <thead className="bg-gray-50 border-b border-gray-300 sticky top-0">
+                    <tr>
+                      <th className="text-left px-4 py-2 text-sm font-semibold">Cor</th>
+                      <th className="text-left px-4 py-2 text-sm font-semibold">Tamanho</th>
+                      <th className="text-center px-4 py-2 text-sm font-semibold">Estoque</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200">
+                    {variants.map((variant) => (
+                      <tr key={variant.id} className="hover:bg-gray-50">
+                        <td className="px-4 py-2 text-sm">{variant.cor}</td>
+                        <td className="px-4 py-2 text-sm">{variant.tamanho}</td>
+                        <td className="px-4 py-2">
+                          <input
+                            type="number"
+                            min="0"
+                            value={variant.estoque}
+                            onChange={(e) => updateVariantStock(variant.id, parseInt(e.target.value) || 0)}
+                            className="w-24 border border-gray-300 px-2 py-1 text-center focus:outline-none focus:border-black"
+                          />
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <p className="text-sm text-gray-600 mt-2">
+                Estoque Total: <strong>{variants.reduce((sum, v) => sum + v.estoque, 0)}</strong> unidades
+              </p>
+            </div>
+          )}
 
-      {variants.length > 0 && (
-        <div className="md:col-span-2">
-          <h3 className="text-lg font-semibold text-gray-900 mb-3">
-            Variações e Estoque ({variants.length})
-          </h3>
-          <div className="border border-gray-300 max-h-96 overflow-y-auto">
-            <table className="w-full">
-              <thead className="bg-gray-50 border-b border-gray-300 sticky top-0">
-                <tr>
-                  <th className="text-left px-4 py-2 text-sm font-semibold">Cor</th>
-                  <th className="text-left px-4 py-2 text-sm font-semibold">Tamanho</th>
-                  <th className="text-center px-4 py-2 text-sm font-semibold">Estoque</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200">
-                {variants.map((variant) => (
-                  <tr key={variant.id} className="hover:bg-gray-50">
-                    <td className="px-4 py-2 text-sm">{variant.cor}</td>
-                    <td className="px-4 py-2 text-sm">{variant.tamanho}</td>
-                    <td className="px-4 py-2">
-                      <input
-                        type="number"
-                        min="0"
-                        value={variant.estoque}
-                        onChange={(e) => updateVariantStock(variant.id, parseInt(e.target.value) || 0)}
-                        className="w-24 border border-gray-300 px-2 py-1 text-center focus:outline-none focus:border-black"
-                      />
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div className="md:col-span-2">
+            <label className="block text-sm font-semibold text-gray-700 mb-2">
+              Descrição
+            </label>
+            <textarea
+              name="descricao"
+              value={formData.descricao}
+              onChange={handleChange}
+              rows={4}
+              className="w-full border border-gray-300 px-4 py-2 focus:outline-none focus:border-black resize-none"
+              placeholder="Descreva o produto..."
+            ></textarea>
           </div>
-          <p className="text-sm text-gray-600 mt-2">
-            Estoque Total: <strong>{variants.reduce((sum, v) => sum + v.estoque, 0)}</strong> unidades
-          </p>
-        </div>
-      )}
 
-      <div className="md:col-span-2">
-        <label className="block text-sm font-semibold text-gray-700 mb-2">
-          Descrição
-        </label>
-        <textarea
-          name="descricao"
-          value={formData.descricao}
-          onChange={handleChange}
-          rows={4}
-          className="w-full border border-gray-300 px-4 py-2 focus:outline-none focus:border-black resize-none"
-          placeholder="Descreva o produto..."
-        ></textarea>
-      </div>
-
-      {/* Seção de Lançamento */}
-      <div className="md:col-span-2 border-t border-gray-200 pt-6 mt-6">
-        <h2 className="text-xl font-bold text-black mb-4">Configuração de Lançamento</h2>
-        <div className="space-y-4">
-          <label className="flex items-center gap-2 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={isLaunch}
-              onChange={(e) => setIsLaunch(e.target.checked)}
-              className="w-4 h-4"
-            />
-            <span className="text-sm font-medium">Marcar como lançamento</span>
-          </label>
-
-          {isLaunch && (
-            <>
-              {/* Ordem de Prioridade REMOVIDA */}
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Data de Expiração (opcional)
-                </label>
+          {/* Seção de Lançamento */}
+          <div className="md:col-span-2 border-t border-gray-200 pt-6 mt-6">
+            <h2 className="text-xl font-bold text-black mb-4">Configuração de Lançamento</h2>
+            <div className="space-y-4">
+              <label className="flex items-center gap-2 cursor-pointer">
                 <input
-                  type="datetime-local"
-                  value={launchExpiresAt}
-                  onChange={(e) => setLaunchExpiresAt(e.target.value)}
-                  className="w-full border border-gray-300 px-4 py-2 focus:outline-none focus:border-black"
+                  type="checkbox"
+                  checked={isLaunch}
+                  onChange={(e) => setIsLaunch(e.target.checked)}
+                  className="w-4 h-4"
                 />
-                <p className="text-xs text-gray-500 mt-1">
-                  O produto sairá da seção de lançamentos automaticamente após esta data.
-                </p>
-              </div>
-            </>
-          )}
-        </div>
-      </div>
+                <span className="text-sm font-medium">Marcar como lançamento</span>
+              </label>
 
-      {/* Seção de Desconto do Produto */}
-      <div className="md:col-span-2 border-t border-gray-200 pt-6 mt-6">
-        <h2 className="text-xl font-bold text-black mb-4">Desconto do Produto</h2>
-        <div className="space-y-4">
-          <label className="flex items-center gap-2 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={discountActive}
-              onChange={(e) => setDiscountActive(e.target.checked)}
-              className="w-4 h-4"
-            />
-            <span className="text-sm font-medium">Ativar desconto</span>
-          </label>
-
-          {discountActive && (
-            <>
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Tipo do desconto *
-                </label>
-                <div className="flex gap-4">
-                  <label className="flex items-center gap-2 cursor-pointer">
+              {isLaunch && (
+                <>
+                  {/* Ordem de Prioridade REMOVIDA */}
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      Data de Expiração (opcional)
+                    </label>
                     <input
-                      type="radio"
-                      name="discountType"
-                      value="percentage"
-                      checked={discountType === 'percentage'}
-                      onChange={() => setDiscountType('percentage')}
-                      className="w-4 h-4"
+                      type="datetime-local"
+                      value={launchExpiresAt}
+                      onChange={(e) => setLaunchExpiresAt(e.target.value)}
+                      className="w-full border border-gray-300 px-4 py-2 focus:outline-none focus:border-black"
                     />
-                    <span className="text-sm">Porcentagem (%)</span>
-                  </label>
-                  <label className="flex items-center gap-2 cursor-pointer">
+                    <p className="text-xs text-gray-500 mt-1">
+                      O produto sairá da seção de lançamentos automaticamente após esta data.
+                    </p>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+
+          {/* Seção de Desconto do Produto */}
+          <div className="md:col-span-2 border-t border-gray-200 pt-6 mt-6">
+            <h2 className="text-xl font-bold text-black mb-4">Desconto do Produto</h2>
+            <div className="space-y-4">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={discountActive}
+                  onChange={(e) => setDiscountActive(e.target.checked)}
+                  className="w-4 h-4"
+                />
+                <span className="text-sm font-medium">Ativar desconto</span>
+              </label>
+
+              {discountActive && (
+                <>
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      Tipo do desconto *
+                    </label>
+                    <div className="flex gap-4">
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="radio"
+                          name="discountType"
+                          value="percentage"
+                          checked={discountType === 'percentage'}
+                          onChange={() => setDiscountType('percentage')}
+                          className="w-4 h-4"
+                        />
+                        <span className="text-sm">Porcentagem (%)</span>
+                      </label>
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="radio"
+                          name="discountType"
+                          value="fixed"
+                          checked={discountType === 'fixed'}
+                          onChange={() => setDiscountType('fixed')}
+                          className="w-4 h-4"
+                        />
+                        <span className="text-sm">Valor direto (R$)</span>
+                      </label>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      Valor do desconto *
+                    </label>
                     <input
-                      type="radio"
-                      name="discountType"
-                      value="fixed"
-                      checked={discountType === 'fixed'}
-                      onChange={() => setDiscountType('fixed')}
-                      className="w-4 h-4"
+                      type="number"
+                      value={discountValue}
+                      onChange={(e) => setDiscountValue(parseFloat(e.target.value) || 0)}
+                      min="0"
+                      step="0.01"
+                      className="w-full border border-gray-300 px-4 py-2 focus:outline-none focus:border-black"
+                      placeholder={discountType === 'percentage' ? 'Ex: 10 para 10%' : 'Ex: 20.00 para R$20 de desconto'}
+                      required
                     />
-                    <span className="text-sm">Valor direto (R$)</span>
-                  </label>
-                </div>
-              </div>
+                    {formData.preco > 0 && (
+                      <p className="text-xs text-gray-500 mt-1">
+                        Preço final estimado: R$ {calculateDiscountedPrice({ ...formData, id: 0, estoque: 0, discountActive: true, discountType, discountValue, discountExpiresAt: '2100-01-01T00:00:00' }).toFixed(2)}
+                      </p>
+                    )}
+                  </div>
 
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Valor do desconto *
-                </label>
-                <input
-                  type="number"
-                  value={discountValue}
-                  onChange={(e) => setDiscountValue(parseFloat(e.target.value) || 0)}
-                  min="0"
-                  step="0.01"
-                  className="w-full border border-gray-300 px-4 py-2 focus:outline-none focus:border-black"
-                  placeholder={discountType === 'percentage' ? 'Ex: 10 para 10%' : 'Ex: 20.00 para R$20 de desconto'}
-                  required
-                />
-                {formData.preco > 0 && (
-                  <p className="text-xs text-gray-500 mt-1">
-                    Preço final estimado: R$ {calculateDiscountedPrice({ ...formData, id: 0, estoque: 0, discountActive: true, discountType, discountValue, discountExpiresAt: '2100-01-01T00:00:00' }).toFixed(2)}
-                  </p>
-                )}
-              </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      Data de expiração *
+                    </label>
+                    <input
+                      type="datetime-local"
+                      value={discountExpiresAt}
+                      onChange={(e) => setDiscountExpiresAt(e.target.value)}
+                      className="w-full border border-gray-300 px-4 py-2 focus:outline-none focus:border-black"
+                      required
+                    />
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
 
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Data de expiração *
-                </label>
-                <input
-                  type="datetime-local"
-                  value={discountExpiresAt}
-                  onChange={(e) => setDiscountExpiresAt(e.target.value)}
-                  className="w-full border border-gray-300 px-4 py-2 focus:outline-none focus:border-black"
-                  required
-                />
-              </div>
-            </>
-          )}
+          <div className="md:col-span-2 flex gap-6">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                name="ativo"
+                checked={formData.ativo}
+                onChange={handleChange}
+                className="w-4 h-4"
+              />
+              <span className="text-sm font-medium">Produto Ativo</span>
+            </label>
+
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                name="visivel"
+                checked={formData.visivel}
+                onChange={handleChange}
+                className="w-4 h-4"
+              />
+              <span className="text-sm font-medium">Visível no Catálogo</span>
+            </label>
+          </div>
         </div>
-      </div>
 
-      <div className="md:col-span-2 flex gap-6">
-        <label className="flex items-center gap-2 cursor-pointer">
-          <input
-            type="checkbox"
-            name="ativo"
-            checked={formData.ativo}
-            onChange={handleChange}
-            className="w-4 h-4"
-          />
-          <span className="text-sm font-medium">Produto Ativo</span>
-        </label>
-
-        <label className="flex items-center gap-2 cursor-pointer">
-          <input
-            type="checkbox"
-            name="visivel"
-            checked={formData.visivel}
-            onChange={handleChange}
-            className="w-4 h-4"
-          />
-          <span className="text-sm font-medium">Visível no Catálogo</span>
-        </label>
-      </div>
+        <div className="flex gap-3 mt-6">
+          <button
+            type="submit"
+            className="bg-black text-white px-6 py-2 hover:bg-gray-800 transition-colors font-medium"
+          >
+            {isEditing ? 'Atualizar Produto' : 'Criar Produto'}
+          </button>
+          <button
+            type="button"
+            onClick={() => navigate('/admin/produtos')}
+            className="border-2 border-gray-300 text-gray-700 px-6 py-2 hover:border-black hover:text-black transition-colors font-medium"
+          >
+            Cancelar
+          </button>
+        </div>
+      </form>
     </div>
-
-    <div className="flex gap-3 mt-6">
-      <button
-        type="submit"
-        className="bg-black text-white px-6 py-2 hover:bg-gray-800 transition-colors font-medium"
-      >
-        {isEditing ? 'Atualizar Produto' : 'Criar Produto'}
-      </button>
-      <button
-        type="button"
-        onClick={() => navigate('/admin/produtos')}
-        className="border-2 border-gray-300 text-gray-700 px-6 py-2 hover:border-black hover:text-black transition-colors font-medium"
-      >
-        Cancelar
-      </button>
-    </div>
-  </form>
-</div>
+  );
+}
