@@ -1,5 +1,30 @@
 import { Product, DiscountType } from '../types';
 
+// Função auxiliar para criar um objeto Date interpretado no fuso horário local
+// Isso resolve o problema de 3 horas (UTC vs Local) ao analisar strings ISO sem fuso.
+function createLocalDate(isoString: string): Date {
+  if (!isoString) return new Date(0);
+
+  // Espera o formato: YYYY-MM-DDTHH:MM:SS
+  const parts = isoString.match(/(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})/);
+  
+  if (parts) {
+    // Constrói o Date usando componentes locais (Ano, MêsIndex, Dia, Hora, Minuto, Segundo)
+    // Isso força a interpretação no fuso horário local do ambiente de execução.
+    return new Date(
+      parseInt(parts[1]), // Ano
+      parseInt(parts[2]) - 1, // Mês (0-11)
+      parseInt(parts[3]), // Dia
+      parseInt(parts[4]), // Hora
+      parseInt(parts[5]), // Minuto
+      parseInt(parts[6]) // Segundo
+    );
+  }
+  
+  // Fallback para formatos inesperados
+  return new Date(isoString); 
+}
+
 /**
  * Verifica se um desconto está ativo e não expirou.
  * @param product O objeto Product.
@@ -11,8 +36,7 @@ export function isDiscountValid(product: Product): boolean {
   }
 
   if (product.discountExpiresAt) {
-    // NÃO adiciona 'Z'. Trata a string YYYY-MM-DDTHH:MM:SS como data local.
-    const expirationDate = new Date(product.discountExpiresAt); 
+    const expirationDate = createLocalDate(product.discountExpiresAt); 
     if (expirationDate < new Date()) {
       return false; // Desconto expirou
     }
@@ -30,8 +54,7 @@ export function isLaunchValid(product: Product): boolean {
     return false;
   }
   if (product.launchExpiresAt) {
-    // NÃO adiciona 'Z'. Trata a string YYYY-MM-DDTHH:MM:SS como data local.
-    const expirationDate = new Date(product.launchExpiresAt); 
+    const expirationDate = createLocalDate(product.launchExpiresAt); 
     if (expirationDate < new Date()) {
       return false; // Lançamento expirado
     }
@@ -69,8 +92,7 @@ export function calculateDiscountedPrice(product: Product): number {
 export function formatCountdown(expirationDateString?: string): string | null {
   if (!expirationDateString) return null;
 
-  // NÃO adiciona 'Z'. Trata a string YYYY-MM-DDTHH:MM:SS como data local.
-  const expirationDate = new Date(expirationDateString); 
+  const expirationDate = createLocalDate(expirationDateString); 
   const now = new Date();
   const diff = expirationDate.getTime() - now.getTime();
 
