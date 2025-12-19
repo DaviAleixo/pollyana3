@@ -8,39 +8,24 @@ import { resizeImage, validateFileSize, validateFileType } from '../../utils/ima
 import { STANDARD_COLORS, getNearestColorName } from '../../utils/colorUtils';
 import ColorPicker from '../../components/ColorPicker';
 import { calculateDiscountedPrice } from '../../utils/productUtils';
-import { NumericFormat } from 'react-number-format';
+import { NumericFormat } from 'react-number-format'; // Importar NumericFormat
 
-// Função auxiliar para formatar a data do banco para o input datetime-local
-// Garante que a data seja tratada como horário local sem conversão de timezone
+// Função auxiliar para formatar a data ISO para o input datetime-local
+// Converte o formato de armazenamento (YYYY-MM-DD HH:MM:SS) para o formato do input (YYYY-MM-DDTHH:MM)
 const formatIsoToLocal = (isoString: string | undefined): string => {
   if (!isoString) return '';
-  
-  // Remove 'Z' se existir e substitui espaço por 'T'
-  let dateStr = isoString.replace('Z', '').replace(' ', 'T');
-  
-  // Se a string tem timezone (+00:00 ou -03:00), precisamos converter para local
-  if (dateStr.includes('+') || dateStr.match(/-\d{2}:\d{2}$/)) {
-    const date = new Date(isoString);
-    // Formata para o timezone local
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    const hours = String(date.getHours()).padStart(2, '0');
-    const minutes = String(date.getMinutes()).padStart(2, '0');
-    return `${year}-${month}-${day}T${hours}:${minutes}`;
-  }
-  
-  // Remove segundos e milissegundos se existirem
-  return dateStr.slice(0, 16);
+  // Substitui o espaço por 'T' e remove segundos se existirem
+  return isoString.replace(' ', 'T').slice(0, 16);
 };
 
-// Função auxiliar para converter do input para o formato de armazenamento
-// Mantém como horário local (sem conversão de timezone)
+// Função auxiliar para converter a string local do input de volta para o formato de armazenamento
+// Armazenamos no formato YYYY-MM-DD HH:MM:SS (sem 'T' e sem 'Z') para ser tratado como data local pelo Supabase.
 const formatLocalToIso = (localString: string): string => {
   if (!localString) return '';
-  // Formato: YYYY-MM-DD HH:MM:SS (horário local, sem timezone)
+  // Substitui 'T' por espaço e adiciona segundos para consistência
   return `${localString.replace('T', ' ')}:00`;
 };
+
 
 export default function ProductFormNew() {
   const navigate = useNavigate();
@@ -72,89 +57,97 @@ export default function ProductFormNew() {
   const [discountValue, setDiscountValue] = useState<number>(0);
   const [discountExpiresAt, setDiscountExpiresAt] = useState<string>('');
 
+  // ESTADOS PARA LANÇAMENTO
   const [isLaunch, setIsLaunch] = useState(false);
   const [launchExpiresAt, setLaunchExpiresAt] = useState<string>('');
+  // launchOrder removido
 
   const [formData, setFormData] = useState({
     nome: '',
     preco: 0,
     descricao: '',
     imagem: '',
-    categoriaId: 0,
+    categoriaId: 0, // 0 significa "nenhuma subcategoria selecionada" ou "categoria principal tem subcategorias"
     ativo: true,
     visivel: true,
+    // estoque: 0, // REMOVIDO
   });
 
   const tamanhosPadrao = ['P', 'M', 'G', 'GG', 'TAM ÚNICO'];
   const tamanhosNumeracao = ['34', '36', '38', '40', '42', '44', '46', '48'];
 
-  useEffect(() => {
-    const loadData = async () => {
-      try {
-        const fetchedAllCategories = await categoriesService.getAll();
-        const validCategories = Array.isArray(fetchedAllCategories) ? fetchedAllCategories : [];
+useEffect(() => {
+  const loadData = async () => {
+    try {
+      // ✅ CORRETO: await nas chamadas assíncronas
+      const fetchedAllCategories = await categoriesService.getAll();
+      
+      // ✅ Validação de array
+      const validCategories = Array.isArray(fetchedAllCategories) ? fetchedCategories : [];
+      
+      setAllCategories(validCategories);
+      setMainCategories(validCategories.filter(c => c.parentId === null));
+
+      if (isEditing && id) {
+        const product = await productsService.getById(parseInt(id));
         
-        setAllCategories(validCategories);
-        setMainCategories(validCategories.filter(c => c.parentId === null));
+        if (product) {
+          setFormData({
+            nome: product.nome,
+            preco: product.preco,
+            descricao: product.descricao,
+            imagem: product.imagem,
+            categoriaId: product.categoriaId,
+            ativo: product.ativo,
+            visivel: product.visivel,
+            // estoque: product.estoque, // REMOVIDO
+          });
+          setMainImagePreview(product.imagem);
 
-        if (isEditing && id) {
-          const product = await productsService.getById(parseInt(id));
-          
-          if (product) {
-            setFormData({
-              nome: product.nome,
-              preco: product.preco,
-              descricao: product.descricao,
-              imagem: product.imagem,
-              categoriaId: product.categoriaId,
-              ativo: product.ativo,
-              visivel: product.visivel,
-            });
-            setMainImagePreview(product.imagem);
+          if (product.tipoTamanho) setTipoTamanho(product.tipoTamanho);
+          if (product.cores) {
+            setStandardColorsWithImages(product.cores.filter(c => !c.isCustom));
+            setCustomColors(product.cores.filter(c => c.isCustom));
+            if (product.cores.some(c => c.isCustom)) setCustomColorsEnabled(true);
+          }
+          if (product.variants) setVariants(product.variants);
+          setImagesRequiredForColors(product.imagesRequiredForColors || false);
 
-            if (product.tipoTamanho) setTipoTamanho(product.tipoTamanho);
-            if (product.cores) {
-              setStandardColorsWithImages(product.cores.filter(c => !c.isCustom));
-              setCustomColors(product.cores.filter(c => c.isCustom));
-              if (product.cores.some(c => c.isCustom)) setCustomColorsEnabled(true);
+          setDiscountActive(product.discountActive || false);
+          setDiscountType(product.discountType || 'percentage');
+          setDiscountValue(product.discountValue || 0);
+          setDiscountExpiresAt(product.discountExpiresAt || '');
+
+          setIsLaunch(product.isLaunch || false);
+          setLaunchExpiresAt(product.launchExpiresAt || '');
+
+          const productCategory = validCategories.find(c => c.id === product.categoriaId);
+          if (productCategory) {
+            if (productCategory.parentId !== null) {
+              setSelectedMainCategoryId(productCategory.parentId);
+            } else {
+              setSelectedMainCategoryId(productCategory.id);
             }
-            if (product.variants) setVariants(product.variants);
-            setImagesRequiredForColors(product.imagesRequiredForColors || false);
-
-            setDiscountActive(product.discountActive || false);
-            setDiscountType(product.discountType || 'percentage');
-            setDiscountValue(product.discountValue || 0);
-            setDiscountExpiresAt(formatIsoToLocal(product.discountExpiresAt));
-
-            setIsLaunch(product.isLaunch || false);
-            setLaunchExpiresAt(formatIsoToLocal(product.launchExpiresAt));
-
-            const productCategory = validCategories.find(c => c.id === product.categoriaId);
-            if (productCategory) {
-              if (productCategory.parentId !== null) {
-                setSelectedMainCategoryId(productCategory.parentId);
-              } else {
-                setSelectedMainCategoryId(productCategory.id);
-              }
-            }
-          } else {
-            navigate('/admin/produtos');
           }
         } else {
-          setFormData(prev => ({ ...prev, categoriaId: 1 }));
-          setSelectedMainCategoryId(1);
+          navigate('/admin/produtos');
         }
-      } catch (error) {
-        console.error('Erro ao carregar dados:', error);
-        setAllCategories([]);
-        setMainCategories([]);
-        navigate('/admin/produtos');
+      } else {
+        // Para novos produtos, define a categoria padrão como 'Todos' (ID 1)
+        setFormData(prev => ({ ...prev, categoriaId: 1 }));
+        setSelectedMainCategoryId(1);
       }
-    };
+    } catch (error) {
+      console.error('Erro ao carregar dados:', error);
+      setAllCategories([]);
+      setMainCategories([]);
+      navigate('/admin/produtos');
+    }
+  };
 
-    loadData();
-  }, [id, isEditing, navigate]);
-
+  loadData();
+}, [id, isEditing, navigate]);
+  // Efeito para atualizar as subcategorias quando a categoria principal selecionada muda
   useEffect(() => {
     if (selectedMainCategoryId !== null) {
       setSubCategories(allCategories.filter(c => c.parentId === selectedMainCategoryId));
@@ -163,6 +156,7 @@ export default function ProductFormNew() {
     }
   }, [selectedMainCategoryId, allCategories]);
 
+  // Efeitos para cores personalizadas e feedback visual
   useEffect(() => {
     if (newCustomColor.hex) {
       setNewCustomColor(prev => ({ ...prev, nome: getNearestColorName(newCustomColor.hex) }));
@@ -194,16 +188,16 @@ export default function ProductFormNew() {
     setSelectedMainCategoryId(mainCatId);
 
     if (mainCatId === null) {
-      setFormData(prev => ({ ...prev, categoriaId: 1 }));
+      setFormData(prev => ({ ...prev, categoriaId: 1 })); // Padrão para 'Todos' se nenhuma categoria principal for selecionada
       return;
     }
 
     const hasSubcategories = allCategories.filter(c => c.parentId === mainCatId).length > 0;
 
     if (hasSubcategories) {
-      setFormData(prev => ({ ...prev, categoriaId: 0 }));
+      setFormData(prev => ({ ...prev, categoriaId: 0 })); // Força a seleção de uma subcategoria
     } else {
-      setFormData(prev => ({ ...prev, categoriaId: mainCatId }));
+      setFormData(prev => ({ ...prev, categoriaId: mainCatId })); // A categoria principal é a seleção final
     }
   };
 
@@ -397,7 +391,7 @@ export default function ProductFormNew() {
       return;
     }
 
-    if (formData.categoriaId === 0) {
+    if (formData.categoriaId === 0) { // 0 indica que nenhuma subcategoria foi selecionada ou que a principal não pode ser usada
       alert('Selecione uma categoria ou subcategoria válida para o produto.');
       return;
     }
@@ -421,6 +415,7 @@ export default function ProductFormNew() {
       return;
     }
 
+    // Validação do desconto
     if (discountActive) {
       if (discountValue <= 0) {
         alert('O valor do desconto deve ser maior que zero.');
@@ -434,19 +429,19 @@ export default function ProductFormNew() {
         alert('A data de expiração do desconto é obrigatória quando o desconto está ativo.');
         return;
       }
-      
-      // Validação: a data deve ser futura
-      const selectedDate = new Date(discountExpiresAt);
-      const now = new Date();
-      if (selectedDate <= now) {
+      // Validação de data futura usando a string local
+      // Usamos a função de conversão para criar um objeto Date local para comparação
+      const expirationDate = new Date(formatLocalToIso(discountExpiresAt).replace(' ', 'T'));
+      if (expirationDate < new Date()) {
         alert('A data de expiração do desconto deve ser no futuro.');
         return;
       }
 
+      // Simular o produto para validar o preço final
       const tempProduct: Product = {
         ...formData,
-        id: 0,
-        estoque: 0,
+        id: 0, // ID temporário
+        estoque: 0, // Adicionado estoque para satisfazer o tipo Product
         discountActive,
         discountType,
         discountValue,
@@ -459,30 +454,34 @@ export default function ProductFormNew() {
       }
     }
 
+    // Validação do lançamento
     if (isLaunch && launchExpiresAt) {
-      const selectedDate = new Date(launchExpiresAt);
-      const now = new Date();
-      if (selectedDate <= now) {
+      const launchExpirationDate = new Date(formatLocalToIso(launchExpiresAt).replace(' ', 'T'));
+      if (launchExpirationDate < new Date()) {
         alert('A data de expiração do lançamento deve ser no futuro.');
         return;
       }
     }
 
+
     const estoqueTotal = variants.reduce((sum, v) => sum + v.estoque, 0);
 
     const productData: Product = {
       ...formData,
-      estoque: estoqueTotal,
+      estoque: estoqueTotal, // O estoque total é calculado a partir das variantes
       tipoTamanho,
       cores: allSelectedColors,
       variants,
       imagesRequiredForColors,
+      // Dados de desconto
       discountActive: discountActive,
       discountType: discountActive ? discountType : undefined,
       discountValue: discountActive ? discountValue : undefined,
-      discountExpiresAt: discountActive ? formatLocalToIso(discountExpiresAt) : undefined,
+      discountExpiresAt: discountActive ? formatLocalToIso(discountExpiresAt) : undefined, // SALVA NO FORMATO LOCAL
+      // Dados de lançamento
       isLaunch: isLaunch,
-      launchExpiresAt: isLaunch && launchExpiresAt ? formatLocalToIso(launchExpiresAt) : undefined,
+      launchExpiresAt: isLaunch && launchExpiresAt ? formatLocalToIso(launchExpiresAt) : undefined, // SALVA NO FORMATO LOCAL
+      // launchOrder removido
     };
 
     console.log('ProductFormNew.handleSubmit() - Product data being saved:', {
@@ -492,7 +491,8 @@ export default function ProductFormNew() {
       estoque: productData.estoque,
       isLaunch: productData.isLaunch,
       launchExpiresAt: productData.launchExpiresAt,
-      discountExpiresAt: productData.discountExpiresAt,
+      // launchOrder removido
+      // ... other relevant fields
     });
 
     if (isEditing && id) {
@@ -555,6 +555,7 @@ export default function ProductFormNew() {
             />
           </div>
 
+          {/* Seleção de Categoria Principal */}
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-2">
               Categoria Principal *
@@ -574,13 +575,14 @@ export default function ProductFormNew() {
             </select>
           </div>
 
+          {/* Seleção de Subcategoria (dinâmica) */}
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-2">
               Subcategoria (opcional)
             </label>
             <select
               name="categoriaId"
-              value={formData.categoriaId === 0 ? '' : formData.categoriaId}
+              value={formData.categoriaId === 0 ? '' : formData.categoriaId} // Se 0, mostra opção vazia
               onChange={handleSubCategoryChange}
               className="w-full border border-gray-300 px-4 py-2 focus:outline-none focus:border-black"
               disabled={!selectedMainCategoryId || subCategories.length === 0}
@@ -718,365 +720,373 @@ export default function ProductFormNew() {
                               type="button"
                               onClick={() => handleRemoveStandardColorImage(color.nome)}
                               className="absolute -top-1 -right-1 bg-red-600 text-white p-1 hover:bg-red-700 transition-colors"
-                              title="Remover imagem">
-                          <X className="w-3 h-3" />
-                        </button>
+                              title="Remover imagem"
+                            >
+                              <X className="w-3 h-3" />
+                            </button>
+                          </div>
+                        )}
+                        <label className="flex items-center justify-center gap-2 border-2 border-dashed border-gray-300 px-3 py-2 cursor-pointer hover:border-black transition-colors text-xs">
+                          <Upload className="w-3 h-3" />
+                          Upload Imagem
+                          <input
+                            type="file"
+                            accept="image/jpeg,image/jpg,image/png,image/webp"
+                            onChange={(e) => handleStandardColorImageUpload(e, color.nome)}
+                            className="hidden"
+                          />
+                        </label>
                       </div>
                     )}
-                    <label className="flex items-center justify-center gap-2 border-2 border-dashed border-gray-300 px-3 py-2 cursor-pointer hover:border-black transition-colors text-xs">
-                      <Upload className="w-3 h-3" />
-                      Upload Imagem
-                      <input
-                        type="file"
-                        accept="image/jpeg,image/jpg,image/png,image/webp"
-                        onChange={(e) => handleStandardColorImageUpload(e, color.nome)}
-                        className="hidden"
-                      />
-                    </label>
+                  </div>
+                );
+              })}
+            </div>
+
+            <label className="flex items-center gap-2 mb-4 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={customColorsEnabled}
+                onChange={(e) => setCustomColorsEnabled(e.target.checked)}
+                className="w-4 h-4"
+              />
+              <span className="text-sm font-semibold">Adicionar outras cores (personalizadas)</span>
+            </label>
+
+            {customColorsEnabled && (
+              <div className="border border-gray-300 p-4 bg-gray-50">
+                <h3 className="font-semibold text-gray-900 mb-3">Cores Personalizadas</h3>
+
+                {customColors.length > 0 && (
+                  <div className="mb-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {customColors.map((cor) => (
+                      <div 
+                        key={cor.id} 
+                        className={`flex items-center gap-3 border border-gray-300 p-3 bg-white transition-colors duration-500 ${
+                          cor.id === lastAddedCustomColorId ? 'bg-yellow-50' : ''
+                        }`}
+                      >
+                        <div
+                          className="w-16 h-16 flex-shrink-0 border border-gray-200 overflow-hidden"
+                          style={{ backgroundColor: cor.hex || '#CCCCCC' }}
+                        >
+                          {cor.imagem && (
+                            <img src={cor.imagem} alt={cor.nome} className="w-full h-full object-cover" />
+                          )}
+                        </div>
+                        <div className="flex-1">
+                          <p className="font-medium text-gray-900">{cor.nome}</p>
+                          {cor.hex && <p className="text-xs text-gray-500">{cor.hex}</p>}
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveCustomColor(cor.id)}
+                          className="text-red-600 hover:text-red-800"
+                          title="Remover"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ))}
                   </div>
                 )}
-              </div>
-            );
-          })}
-        </div>
 
-        <label className="flex items-center gap-2 mb-4 cursor-pointer">
-          <input
-            type="checkbox"
-            checked={customColorsEnabled}
-            onChange={(e) => setCustomColorsEnabled(e.target.checked)}
-            className="w-4 h-4"
-          />
-          <span className="text-sm font-semibold">Adicionar outras cores (personalizadas)</span>
-        </label>
-
-        {customColorsEnabled && (
-          <div className="border border-gray-300 p-4 bg-gray-50">
-            <h3 className="font-semibold text-gray-900 mb-3">Cores Personalizadas</h3>
-
-            {customColors.length > 0 && (
-              <div className="mb-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {customColors.map((cor) => (
-                  <div 
-                    key={cor.id} 
-                    className={`flex items-center gap-3 border border-gray-300 p-3 bg-white transition-colors duration-500 ${
-                      cor.id === lastAddedCustomColorId ? 'bg-yellow-50' : ''
-                    }`}
-                  >
-                    <div
-                      className="w-16 h-16 flex-shrink-0 border border-gray-200 overflow-hidden"
-                      style={{ backgroundColor: cor.hex || '#CCCCCC' }}
-                    >
-                      {cor.imagem && (
-                        <img src={cor.imagem} alt={cor.nome} className="w-full h-full object-cover" />
-                      )}
-                    </div>
-                    <div className="flex-1">
-                      <p className="font-medium text-gray-900">{cor.nome}</p>
-                      {cor.hex && <p className="text-xs text-gray-500">{cor.hex}</p>}
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveCustomColor(cor.id)}
-                      className="text-red-600 hover:text-red-800"
-                      title="Remover"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-3">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Nome da Cor *
+                    </label>
+                    <input
+                      type="text"
+                      value={newCustomColor.nome}
+                      onChange={(e) => setNewCustomColor(prev => ({ ...prev, nome: e.target.value }))}
+                      placeholder="Ex: Laranja, Roxo..."
+                      className="w-full border border-gray-300 px-3 py-2 focus:outline-none focus:border-black"
+                      required={customColorsEnabled}
+                    />
                   </div>
-                ))}
+
+                  <ColorPicker
+                    label="Cor Hexadecimal *"
+                    value={newCustomColor.hex || '#000000'}
+                    onChange={(hex) => setNewCustomColor(prev => ({ ...prev, hex }))}
+                    className="mb-3"
+                  />
+                </div>
+
+                <div className="mb-4">
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Imagem para a Nova Cor Personalizada {imagesRequiredForColors && '*'}
+                  </label>
+                  {newCustomColorImagePreview && (
+                    <div className="mb-4 relative inline-block">
+                      <img
+                        src={newCustomColorImagePreview}
+                        alt="Preview Nova Cor"
+                        className="w-24 h-24 object-cover border border-gray-300"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveNewCustomColorImage}
+                        className="absolute -top-2 -right-2 bg-red-600 text-white p-1 hover:bg-red-700 transition-colors"
+                        title="Remover imagem"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </div>
+                  )}
+                  <label className="flex items-center justify-center gap-2 border-2 border-dashed border-gray-300 px-3 py-2 cursor-pointer hover:border-black transition-colors text-sm">
+                    <Upload className="w-4 h-4" />
+                    {newCustomColorUploadLoading ? 'Processando...' : 'Upload Imagem'}
+                    <input
+                      type="file"
+                      accept="image/jpeg,image/jpg,image/png,image/webp"
+                      onChange={handleNewCustomColorImageUpload}
+                      className="hidden"
+                      disabled={newCustomColorUploadLoading}
+                    />
+                  </label>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleAddCustomColor}
+                  className="flex items-center gap-2 bg-green-600 text-white px-4 py-2 hover:bg-green-700 transition-colors"
+                >
+                  <Plus className="w-4 h-4" />
+                  Adicionar Cor Personalizada
+                </button>
               </div>
             )}
+          </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-3">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Nome da Cor *
-                </label>
-                <input
-                  type="text"
-                  value={newCustomColor.nome}
-                  onChange={(e) => setNewCustomColor(prev => ({ ...prev, nome: e.target.value }))}
-                  placeholder="Ex: Laranja, Roxo..."
-                  className="w-full border border-gray-300 px-3 py-2 focus:outline-none focus:border-black"
-                  required={customColorsEnabled}
-                />
-              </div>
-
-              <ColorPicker
-                label="Cor Hexadecimal *"
-                value={newCustomColor.hex || '#000000'}
-                onChange={(hex) => setNewCustomColor(prev => ({ ...prev, hex }))}
-                className="mb-3"
-              />
-            </div>
-
-            <div className="mb-4">
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Imagem para a Nova Cor Personalizada {imagesRequiredForColors && '*'}
-              </label>
-              {newCustomColorImagePreview && (
-                <div className="mb-4 relative inline-block">
-                  <img
-                    src={newCustomColorImagePreview}
-                    alt="Preview Nova Cor"
-                    className="w-24 h-24 object-cover border border-gray-300"
-                  />
-                  <button
-                    type="button"
-                    onClick={handleRemoveNewCustomColorImage}
-                    className="absolute -top-2 -right-2 bg-red-600 text-white p-1 hover:bg-red-700 transition-colors"
-                    title="Remover imagem"
-                  >
-                    <X className="w-3 h-3" />
-                  </button>
-                </div>
-              )}
-              <label className="flex items-center justify-center gap-2 border-2 border-dashed border-gray-300 px-3 py-2 cursor-pointer hover:border-black transition-colors text-sm">
-                <Upload className="w-4 h-4" />
-                {newCustomColorUploadLoading ? 'Processando...' : 'Upload Imagem'}
-                <input
-                  type="file"
-                  accept="image/jpeg,image/jpg,image/png,image/webp"
-                  onChange={handleNewCustomColorImageUpload}
-                  className="hidden"
-                  disabled={newCustomColorUploadLoading}
-                />
-              </label>
-            </div>
-
+          <div className="md:col-span-2">
             <button
               type="button"
-              onClick={handleAddCustomColor}
-              className="flex items-center gap-2 bg-green-600 text-white px-4 py-2 hover:bg-green-700 transition-colors"
+              onClick={generateVariants}
+              className="bg-blue-600 text-white px-6 py-2 hover:bg-blue-700 transition-colors font-medium"
             >
-              <Plus className="w-4 h-4" />
-              Adicionar Cor Personalizada
+              Gerar Variações (Cor × Tamanho)
             </button>
+            <p className="text-xs text-gray-500 mt-2">
+              Clique para criar todas as combinações de cor e tamanho. Configure o estoque de cada variação abaixo.
+            </p>
           </div>
-        )}
-      </div>
 
-      <div className="md:col-span-2">
-        <button
-          type="button"
-          onClick={generateVariants}
-          className="bg-blue-600 text-white px-6 py-2 hover:bg-blue-700 transition-colors font-medium"
-        >
-          Gerar Variações (Cor × Tamanho)
-        </button>
-        <p className="text-xs text-gray-500 mt-2">
-          Clique para criar todas as combinações de cor e tamanho. Configure o estoque de cada variação abaixo.
-        </p>
-      </div>
-
-      {variants.length > 0 && (
-        <div className="md:col-span-2">
-          <h3 className="text-lg font-semibold text-gray-900 mb-3">
-            Variações e Estoque ({variants.length})
-          </h3>
-          <div className="border border-gray-300 max-h-96 overflow-y-auto">
-            <table className="w-full">
-              <thead className="bg-gray-50 border-b border-gray-300 sticky top-0">
-                <tr>
-                  <th className="text-left px-4 py-2 text-sm font-semibold">Cor</th>
-                  <th className="text-left px-4 py-2 text-sm font-semibold">Tamanho</th>
-                  <th className="text-center px-4 py-2 text-sm font-semibold">Estoque</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200">
-                {variants.map((variant) => (
-                  <tr key={variant.id} className="hover:bg-gray-50">
-                    <td className="px-4 py-2 text-sm">{variant.cor}</td>
-                    <td className="px-4 py-2 text-sm">{variant.tamanho}</td>
-                    <td className="px-4 py-2">
-                      <input
-                        type="number"
-                        min="0"
-                        value={variant.estoque}
-                        onChange={(e) => updateVariantStock(variant.id, parseInt(e.target.value) || 0)}
-                        className="w-24 border border-gray-300 px-2 py-1 text-center focus:outline-none focus:border-black"
-                      />
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          <p className="text-sm text-gray-600 mt-2">
-            Estoque Total: <strong>{variants.reduce((sum, v) => sum + v.estoque, 0)}</strong> unidades
-          </p>
-        </div>
-      )}
-
-      <div className="md:col-span-2">
-        <label className="block text-sm font-semibold text-gray-700 mb-2">
-          Descrição
-        </label>
-        <textarea
-          name="descricao"
-          value={formData.descricao}
-          onChange={handleChange}
-          rows={4}
-          className="w-full border border-gray-300 px-4 py-2 focus:outline-none focus:border-black resize-none"
-          placeholder="Descreva o produto..."
-        ></textarea>
-      </div>
-
-      <div className="md:col-span-2 border-t border-gray-200 pt-6 mt-6">
-        <h2 className="text-xl font-bold text-black mb-4">Configuração de Lançamento</h2>
-        <div className="space-y-4">
-          <label className="flex items-center gap-2 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={isLaunch}
-              onChange={(e) => setIsLaunch(e.target.checked)}
-              className="w-4 h-4"
-            />
-            <span className="text-sm font-medium">Marcar como lançamento</span>
-          </label>
-
-          {isLaunch && (
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Data de Expiração (opcional)
-              </label>
-              <input
-                type="datetime-local"
-                value={launchExpiresAt}
-                onChange={(e) => setLaunchExpiresAt(e.target.value)}
-                className="w-full border border-gray-300 px-4 py-2 focus:outline-none focus:border-black"
-              />
-              <p className="text-xs text-gray-500 mt-1">
-                O produto sairá da seção de lançamentos automaticamente após esta data.
+          {variants.length > 0 && (
+            <div className="md:col-span-2">
+              <h3 className="text-lg font-semibold text-gray-900 mb-3">
+                Variações e Estoque ({variants.length})
+              </h3>
+              <div className="border border-gray-300 max-h-96 overflow-y-auto">
+                <table className="w-full">
+                  <thead className="bg-gray-50 border-b border-gray-300 sticky top-0">
+                    <tr>
+                      <th className="text-left px-4 py-2 text-sm font-semibold">Cor</th>
+                      <th className="text-left px-4 py-2 text-sm font-semibold">Tamanho</th>
+                      <th className="text-center px-4 py-2 text-sm font-semibold">Estoque</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200">
+                    {variants.map((variant) => (
+                      <tr key={variant.id} className="hover:bg-gray-50">
+                        <td className="px-4 py-2 text-sm">{variant.cor}</td>
+                        <td className="px-4 py-2 text-sm">{variant.tamanho}</td>
+                        <td className="px-4 py-2">
+                          <input
+                            type="number"
+                            min="0"
+                            value={variant.estoque}
+                            onChange={(e) => updateVariantStock(variant.id, parseInt(e.target.value) || 0)}
+                            className="w-24 border border-gray-300 px-2 py-1 text-center focus:outline-none focus:border-black"
+                          />
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <p className="text-sm text-gray-600 mt-2">
+                Estoque Total: <strong>{variants.reduce((sum, v) => sum + v.estoque, 0)}</strong> unidades
               </p>
             </div>
           )}
-        </div>
-      </div>
 
-      <div className="md:col-span-2 border-t border-gray-200 pt-6 mt-6">
-        <h2 className="text-xl font-bold text-black mb-4">Desconto do Produto</h2>
-        <div className="space-y-4">
-          <label className="flex items-center gap-2 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={discountActive}
-              onChange={(e) => setDiscountActive(e.target.checked)}
-              className="w-4 h-4"
-            />
-            <span className="text-sm font-medium">Ativar desconto</span>
-          </label>
+          <div className="md:col-span-2">
+            <label className="block text-sm font-semibold text-gray-700 mb-2">
+              Descrição
+            </label>
+            <textarea
+              name="descricao"
+              value={formData.descricao}
+              onChange={handleChange}
+              rows={4}
+              className="w-full border border-gray-300 px-4 py-2 focus:outline-none focus:border-black resize-none"
+              placeholder="Descreva o produto..."
+            ></textarea>
+          </div>
 
-          {discountActive && (
-            <>
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Tipo do desconto *
-                </label>
-                <div className="flex gap-4">
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="radio"
-                      name="discountType"
-                      value="percentage"
-                      checked={discountType === 'percentage'}
-                      onChange={() => setDiscountType('percentage')}
-                      className="w-4 h-4"
-                    />
-                    <span className="text-sm">Porcentagem (%)</span>
-                  </label>
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="radio"
-                      name="discountType"
-                      value="fixed"
-                      checked={discountType === 'fixed'}
-                      onChange={() => setDiscountType('fixed')}
-                      className="w-4 h-4"
-                    />
-                    <span className="text-sm">Valor direto (R$)</span>
-                  </label>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Valor do desconto *
-                </label>
+          {/* Seção de Lançamento */}
+          <div className="md:col-span-2 border-t border-gray-200 pt-6 mt-6">
+            <h2 className="text-xl font-bold text-black mb-4">Configuração de Lançamento</h2>
+            <div className="space-y-4">
+              <label className="flex items-center gap-2 cursor-pointer">
                 <input
-                  type="number"
-                  value={discountValue}
-                  onChange={(e) => setDiscountValue(parseFloat(e.target.value) || 0)}
-                  min="0"
-                  step="0.01"
-                  className="w-full border border-gray-300 px-4 py-2 focus:outline-none focus:border-black"
-                  placeholder={discountType === 'percentage' ? 'Ex: 10 para 10%' : 'Ex: 20.00 para R$20 de desconto'}
-                  required
+                  type="checkbox"
+                  checked={isLaunch}
+                  onChange={(e) => setIsLaunch(e.target.checked)}
+                  className="w-4 h-4"
                 />
-                {formData.preco > 0 && (
-                  <p className="text-xs text-gray-500 mt-1">
-                    Preço final estimado: R$ {calculateDiscountedPrice({ ...formData, id: 0, estoque: 0, discountActive: true, discountType, discountValue, discountExpiresAt: '2100-01-01T00:00:00' }).toFixed(2)}
-                  </p>
-                )}
-              </div>
+                <span className="text-sm font-medium">Marcar como lançamento</span>
+              </label>
 
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Data de expiração *
-                </label>
+              {isLaunch && (
+                <>
+                  {/* Ordem de Prioridade REMOVIDA */}
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      Data de Expiração (opcional)
+                    </label>
+                    <input
+                      type="datetime-local"
+                      value={formatIsoToLocal(launchExpiresAt)}
+                      onChange={(e) => setLaunchExpiresAt(e.target.value)}
+                      className="w-full border border-gray-300 px-4 py-2 focus:outline-none focus:border-black"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      O produto sairá da seção de lançamentos automaticamente após esta data.
+                    </p>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+
+          {/* Seção de Desconto do Produto */}
+          <div className="md:col-span-2 border-t border-gray-200 pt-6 mt-6">
+            <h2 className="text-xl font-bold text-black mb-4">Desconto do Produto</h2>
+            <div className="space-y-4">
+              <label className="flex items-center gap-2 cursor-pointer">
                 <input
-                  type="datetime-local"
-                  value={discountExpiresAt}
-                  onChange={(e) => setDiscountExpiresAt(e.target.value)}
-                  className="w-full border border-gray-300 px-4 py-2 focus:outline-none focus:border-black"
-                  required
+                  type="checkbox"
+                  checked={discountActive}
+                  onChange={(e) => setDiscountActive(e.target.checked)}
+                  className="w-4 h-4"
                 />
-              </div>
-            </>
-          )}
+                <span className="text-sm font-medium">Ativar desconto</span>
+              </label>
+
+              {discountActive && (
+                <>
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      Tipo do desconto *
+                    </label>
+                    <div className="flex gap-4">
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="radio"
+                          name="discountType"
+                          value="percentage"
+                          checked={discountType === 'percentage'}
+                          onChange={() => setDiscountType('percentage')}
+                          className="w-4 h-4"
+                        />
+                        <span className="text-sm">Porcentagem (%)</span>
+                      </label>
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="radio"
+                          name="discountType"
+                          value="fixed"
+                          checked={discountType === 'fixed'}
+                          onChange={() => setDiscountType('fixed')}
+                          className="w-4 h-4"
+                        />
+                        <span className="text-sm">Valor direto (R$)</span>
+                      </label>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      Valor do desconto *
+                    </label>
+                    <input
+                      type="number"
+                      value={discountValue}
+                      onChange={(e) => setDiscountValue(parseFloat(e.target.value) || 0)}
+                      min="0"
+                      step="0.01"
+                      className="w-full border border-gray-300 px-4 py-2 focus:outline-none focus:border-black"
+                      placeholder={discountType === 'percentage' ? 'Ex: 10 para 10%' : 'Ex: 20.00 para R$20 de desconto'}
+                      required
+                    />
+                    {formData.preco > 0 && (
+                      <p className="text-xs text-gray-500 mt-1">
+                        Preço final estimado: R$ {calculateDiscountedPrice({ ...formData, id: 0, estoque: 0, discountActive: true, discountType, discountValue, discountExpiresAt: '2100-01-01T00:00:00' }).toFixed(2)}
+                      </p>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      Data de expiração *
+                    </label>
+                    <input
+                      type="datetime-local"
+                      value={formatIsoToLocal(discountExpiresAt)}
+                      onChange={(e) => setDiscountExpiresAt(e.target.value)}
+                      className="w-full border border-gray-300 px-4 py-2 focus:outline-none focus:border-black"
+                      required
+                    />
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+
+          <div className="md:col-span-2 flex gap-6">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                name="ativo"
+                checked={formData.ativo}
+                onChange={handleChange}
+                className="w-4 h-4"
+              />
+              <span className="text-sm font-medium">Produto Ativo</span>
+            </label>
+
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                name="visivel"
+                checked={formData.visivel}
+                onChange={handleChange}
+                className="w-4 h-4"
+              />
+              <span className="text-sm font-medium">Visível no Catálogo</span>
+            </label>
+          </div>
         </div>
-      </div>
 
-      <div className="md:col-span-2 flex gap-6">
-        <label className="flex items-center gap-2 cursor-pointer">
-          <input
-            type="checkbox"
-            name="ativo"
-            checked={formData.ativo}
-            onChange={handleChange}
-            className="w-4 h-4"
-          />
-          <span className="text-sm font-medium">Produto Ativo</span>
-        </label>
-
-        <label className="flex items-center gap-2 cursor-pointer">
-          <input
-            type="checkbox"
-            name="visivel"
-            checked={formData.visivel}
-            onChange={handleChange}
-            className="w-4 h-4"
-          />
-          <span className="text-sm font-medium">Visível no Catálogo</span>
-        </label>
-      </div>
+        <div className="flex gap-3 mt-6">
+          <button
+            type="submit"
+            className="bg-black text-white px-6 py-2 hover:bg-gray-800 transition-colors font-medium"
+          >
+            {isEditing ? 'Atualizar Produto' : 'Criar Produto'}
+          </button>
+          <button
+            type="button"
+            onClick={() => navigate('/admin/produtos')}
+            className="border-2 border-gray-300 text-gray-700 px-6 py-2 hover:border-black hover:text-black transition-colors font-medium"
+          >
+            Cancelar
+          </button>
+        </div>
+      </form>
     </div>
-
-    <div className="flex gap-3 mt-6">
-      <button
-        type="submit"
-        className="bg-black text-white px-6 py-2 hover:bg-gray-800 transition-colors font-medium"
-      >
-        {isEditing ? 'Atualizar Produto' : 'Criar Produto'}
-      </button>
-      <button
-        type="button"
-        onClick={() => navigate('/admin/produtos')}
-        className="border-2 border-gray-300 text-gray-700 px-6 py-2 hover:border-black hover:text-black transition-colors font-medium"
-      >
-        Cancelar
-      </button>
-    </div>
-  </form>
-</div>
+  );
+}
