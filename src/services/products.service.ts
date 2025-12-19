@@ -27,6 +27,7 @@ class ProductsService {
       discountExpiresAt: dbProduct.discount_expires_at,
       isLaunch: dbProduct.is_launch,
       launchExpiresAt: dbProduct.launch_expires_at,
+      order: dbProduct.order ?? 0, // Adicionado order
     };
   }
 
@@ -49,6 +50,7 @@ class ProductsService {
     if (product.discountExpiresAt !== undefined) dbData.discount_expires_at = product.discountExpiresAt;
     if (product.isLaunch !== undefined) dbData.is_launch = product.isLaunch;
     if (product.launchExpiresAt !== undefined) dbData.launch_expires_at = product.launchExpiresAt;
+    if (product.order !== undefined) dbData.order = product.order; // Adicionado order
     return dbData;
   }
 
@@ -98,7 +100,8 @@ class ProductsService {
     const { data, error } = await supabase
       .from('products')
       .select('*')
-      .order('id', { ascending: false });
+      .order('order', { ascending: true }) // Ordena por ordem manual
+      .order('id', { ascending: false }); // Depois por ID (mais recente primeiro)
 
     if (error) {
       console.error('Erro ao buscar produtos:', error);
@@ -125,7 +128,8 @@ class ProductsService {
       .select('*')
       .eq('visivel', true)
       .eq('ativo', true)
-      .order('id', { ascending: false });
+      .order('order', { ascending: true }) // Ordena por ordem manual
+      .order('id', { ascending: false }); // Depois por ID (mais recente primeiro)
 
     if (error) {
       console.error('Erro ao buscar produtos visíveis:', error);
@@ -210,7 +214,12 @@ class ProductsService {
 
   // Criar novo produto
   async create(productData: Omit<Product, 'id'>): Promise<Product | null> {
-    const dbProduct = this.mapToDB(productData);
+    // 1. Determinar a próxima ordem (colocar no final)
+    const allProducts = await this.getAll();
+    const maxOrder = allProducts.length > 0 ? Math.max(...allProducts.map(p => p.order)) : 0;
+    const newOrder = maxOrder + 1;
+
+    const dbProduct = this.mapToDB({ ...productData, order: newOrder });
 
     const { data, error } = await supabase
       .from('products')
@@ -344,7 +353,8 @@ class ProductsService {
       .from('products')
       .select('*')
       .in('categoria_id', categoryIdsToFilter)
-      .order('id', { ascending: false });
+      .order('order', { ascending: true }) // Ordena por ordem manual
+      .order('id', { ascending: false }); // Depois por ID (mais recente primeiro)
 
     if (error) {
       console.error('Erro ao buscar produtos por categoria:', error);

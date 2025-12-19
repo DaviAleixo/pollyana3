@@ -50,7 +50,9 @@ export interface Product {
   // NOVAS PROPRIEDADES PARA LANÇAMENTOS
   isLaunch?: boolean;
   launchExpiresAt?: string; // ISO date string
-  // launchOrder?: number; // Ordem de prioridade REMOVIDO
+  
+  // PROPRIEDADE PARA ORDENAÇÃO MANUAL
+  order: number;
 }
 
 export interface StockMovement {
