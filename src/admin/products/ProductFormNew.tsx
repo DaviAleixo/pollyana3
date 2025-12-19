@@ -11,23 +11,19 @@ import { calculateDiscountedPrice } from '../../utils/productUtils';
 import { NumericFormat } from 'react-number-format'; // Importar NumericFormat
 
 // Função auxiliar para formatar a data ISO para o input datetime-local
-// Agora, apenas extrai a parte YYYY-MM-DDTHH:MM da string ISO, sem conversão de fuso.
+// Converte o formato de armazenamento (YYYY-MM-DD HH:MM:SS) para o formato do input (YYYY-MM-DDTHH:MM)
 const formatIsoToLocal = (isoString: string | undefined): string => {
   if (!isoString) return '';
-  // Se a string já estiver no formato YYYY-MM-DDTHH:MM (sem segundos/Z), retorna ela mesma.
-  if (isoString.length === 16 && isoString.includes('T')) return isoString;
-  
-  // Se for uma string ISO completa (com segundos e Z), remove o fuso e segundos.
-  // Isso é um hack para lidar com o que o Supabase armazena (ISO sem fuso, mas com segundos).
-  return isoString.slice(0, 16);
+  // Substitui o espaço por 'T' e remove segundos se existirem
+  return isoString.replace(' ', 'T').slice(0, 16);
 };
 
 // Função auxiliar para converter a string local do input de volta para o formato de armazenamento
-// Armazenamos no formato YYYY-MM-DDTHH:MM:00 (sem Z) para ser tratado como data local.
+// Armazenamos no formato YYYY-MM-DD HH:MM:SS (sem 'T' e sem 'Z') para ser tratado como data local pelo Supabase.
 const formatLocalToIso = (localString: string): string => {
   if (!localString) return '';
-  // Adiciona segundos para consistência, mas mantém o formato local (sem 'Z')
-  return `${localString}:00`;
+  // Substitui 'T' por espaço e adiciona segundos para consistência
+  return `${localString.replace('T', ' ')}:00`;
 };
 
 
@@ -87,7 +83,7 @@ useEffect(() => {
       const fetchedAllCategories = await categoriesService.getAll();
       
       // ✅ Validação de array
-      const validCategories = Array.isArray(fetchedAllCategories) ? fetchedAllCategories : [];
+      const validCategories = Array.isArray(fetchedAllCategories) ? fetchedCategories : [];
       
       setAllCategories(validCategories);
       setMainCategories(validCategories.filter(c => c.parentId === null));
@@ -434,7 +430,9 @@ useEffect(() => {
         return;
       }
       // Validação de data futura usando a string local
-      if (new Date(discountExpiresAt) < new Date()) {
+      // Usamos a função de conversão para criar um objeto Date local para comparação
+      const expirationDate = new Date(formatLocalToIso(discountExpiresAt).replace(' ', 'T'));
+      if (expirationDate < new Date()) {
         alert('A data de expiração do desconto deve ser no futuro.');
         return;
       }
@@ -457,9 +455,12 @@ useEffect(() => {
     }
 
     // Validação do lançamento
-    if (isLaunch && launchExpiresAt && new Date(launchExpiresAt) < new Date()) {
-      alert('A data de expiração do lançamento deve ser no futuro.');
-      return;
+    if (isLaunch && launchExpiresAt) {
+      const launchExpirationDate = new Date(formatLocalToIso(launchExpiresAt).replace(' ', 'T'));
+      if (launchExpirationDate < new Date()) {
+        alert('A data de expiração do lançamento deve ser no futuro.');
+        return;
+      }
     }
 
 
@@ -476,10 +477,10 @@ useEffect(() => {
       discountActive: discountActive,
       discountType: discountActive ? discountType : undefined,
       discountValue: discountActive ? discountValue : undefined,
-      discountExpiresAt: discountActive ? discountExpiresAt : undefined,
+      discountExpiresAt: discountActive ? formatLocalToIso(discountExpiresAt) : undefined, // SALVA NO FORMATO LOCAL
       // Dados de lançamento
       isLaunch: isLaunch,
-      launchExpiresAt: isLaunch && launchExpiresAt ? launchExpiresAt : undefined,
+      launchExpiresAt: isLaunch && launchExpiresAt ? formatLocalToIso(launchExpiresAt) : undefined, // SALVA NO FORMATO LOCAL
       // launchOrder removido
     };
 
@@ -949,7 +950,7 @@ useEffect(() => {
                     <input
                       type="datetime-local"
                       value={formatIsoToLocal(launchExpiresAt)}
-                      onChange={(e) => setLaunchExpiresAt(formatLocalToIso(e.target.value))}
+                      onChange={(e) => setLaunchExpiresAt(e.target.value)}
                       className="w-full border border-gray-300 px-4 py-2 focus:outline-none focus:border-black"
                     />
                     <p className="text-xs text-gray-500 mt-1">
@@ -1035,7 +1036,7 @@ useEffect(() => {
                     <input
                       type="datetime-local"
                       value={formatIsoToLocal(discountExpiresAt)}
-                      onChange={(e) => setDiscountExpiresAt(formatLocalToIso(e.target.value))}
+                      onChange={(e) => setDiscountExpiresAt(e.target.value)}
                       className="w-full border border-gray-300 px-4 py-2 focus:outline-none focus:border-black"
                       required
                     />

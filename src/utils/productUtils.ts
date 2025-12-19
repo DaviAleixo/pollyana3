@@ -1,19 +1,28 @@
 import { Product, DiscountType } from '../types';
 
 // Função auxiliar para criar um objeto Date interpretado no fuso horário local
-// Aplica uma compensação manual de -3 horas para corrigir o desvio de fuso horário (UTC-3).
+// Isso resolve o problema de 3 horas (UTC vs Local) ao analisar strings ISO sem fuso.
 function createLocalDate(isoString: string): Date {
   if (!isoString) return new Date(0);
 
-  // 1. Cria o objeto Date. Se a string não tiver 'Z' ou fuso, o JS a trata como local,
-  // mas se o Supabase a armazena como UTC, o problema de 3h ocorre.
-  const date = new Date(isoString);
+  // Espera o formato: YYYY-MM-DDTHH:MM:SS
+  const parts = isoString.match(/(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})/);
   
-  // 2. Aplica a compensação de -3 horas.
-  // Subtrai 3 horas do horário lido.
-  date.setHours(date.getHours() - 3);
+  if (parts) {
+    // Constrói o Date usando componentes locais (Ano, MêsIndex, Dia, Hora, Minuto, Segundo)
+    // Isso força a interpretação no fuso horário local do ambiente de execução.
+    return new Date(
+      parseInt(parts[1]), // Ano
+      parseInt(parts[2]) - 1, // Mês (0-11)
+      parseInt(parts[3]), // Dia
+      parseInt(parts[4]), // Hora
+      parseInt(parts[5]), // Minuto
+      parseInt(parts[6]) // Segundo
+    );
+  }
   
-  return date;
+  // Fallback para formatos inesperados
+  return new Date(isoString); 
 }
 
 /**

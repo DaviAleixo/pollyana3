@@ -56,7 +56,7 @@ export default function Navbar({ onMenuToggle, searchTerm, onSearchTermChange, o
             <img
               src={logoImage}
               alt="Pollyana Basic Chic"
-              className="h-16 md:h-20 w-auto object-contain"
+              className="h-20 md:h-24 w-auto object-contain"
             />
           </Link>
 
