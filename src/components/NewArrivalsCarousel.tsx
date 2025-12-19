@@ -19,8 +19,11 @@ export default function NewArrivalsCarousel() {
       try {
         setLoading(true);
         const fetchedLaunches = await productsService.getLaunches();
-        // Garante que sempre seja um array
-        setLaunches(Array.isArray(fetchedLaunches) ? fetchedLaunches : []);
+        
+        const validLaunches = Array.isArray(fetchedLaunches) ? fetchedLaunches : [];
+        
+        setLaunches(validLaunches);
+        console.log(`[NewArrivalsCarousel] Produtos de lançamento carregados: ${validLaunches.length}`, validLaunches.map(p => ({ id: p.id, nome: p.nome, isLaunch: p.isLaunch, expires: p.launchExpiresAt })));
       } catch (error) {
         console.error('Erro ao carregar lançamentos:', error);
         setLaunches([]);
@@ -76,7 +79,7 @@ export default function NewArrivalsCarousel() {
   }
 
   // Não exibe nada se não houver lançamentos
-  if (!Array.isArray(launches) || launches.length === 0) {
+  if (launches.length === 0) {
     return null;
   }
 
