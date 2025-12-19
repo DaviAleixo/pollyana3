@@ -15,7 +15,7 @@ export default function CategoryNavbar({ categories, onSelectCategory, selectedC
   }
 
   return (
-    <nav className="fixed top-[104px] lg:top-[80px] left-0 w-full bg-white border-b border-gray-200 z-30 hidden lg:block"> {/* Revertido para top-[104px] (mobile) e lg:top-[80px] (desktop) */}
+    <nav className="fixed top-[104px] lg:top-[72px] left-0 w-full bg-white border-b border-gray-200 z-30 hidden lg:block"> {/* Ajustado top desktop para 72px */}
       <div className="max-w-7xl mx-auto px-4">
         <div className="flex items-center justify-center h-12 overflow-x-auto scrollbar-hide">
           <CategoryNavigation

@@ -66,7 +66,7 @@ export default function Navbar({ onMenuToggle, searchTerm, onSearchTermChange, o
             <img
               src={logoUrl} // Usar o estado da URL
               alt="Pollyana Basic Chic"
-              className="h-16 md:h-20 w-auto object-contain" // Revertido para h-16 md:h-20
+              className="h-14 md:h-16 w-auto object-contain" // Reduzido para h-14 md:h-16
             />
           </Link>
 
@@ -101,7 +101,7 @@ export default function Navbar({ onMenuToggle, searchTerm, onSearchTermChange, o
         </div>
 
         {/* Linha 2 (Mobile Search Bar and Filter Button) */}
-        <div className="lg:hidden px-4 pb-3 max-w-7xl mx-auto flex items-center justify-between gap-4 border-t border-gray-100 mt-2"> {/* Adicionado mt-2 e ajustado gap/justify */}
+        <div className="lg:hidden px-4 pb-3 max-w-7xl mx-auto flex items-center justify-between gap-4 border-t border-gray-100 mt-2">
           <SearchBar
             onSearchTermChange={onSearchTermChange}
             initialSearchTerm={searchTerm}
