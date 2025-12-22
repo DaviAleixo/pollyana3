@@ -29,6 +29,7 @@ export default function ProductCatalog({ allProducts, categories, selectedCatego
   const [modalOpen, setModalOpen] = useState(false);
   const [visibleBanners, setVisibleBanners] = useState<Banner[]>([]);
   const [currentBannerIndex, setCurrentBannerIndex] = useState(0);
+  const [hoveredProductId, setHoveredProductId] = useState<number | null>(null); // Novo estado para rastrear o hover
 
   // Carregar banners visíveis e configurar listener para mudanças no storage
   useEffect(() => {
@@ -279,6 +280,8 @@ export default function ProductCatalog({ allProducts, categories, selectedCatego
                 <div
                   key={product.id}
                   className="group bg-white border border-gray-200 overflow-hidden hover:shadow-xl transition-shadow duration-300 flex flex-col rounded-lg"
+                  onMouseEnter={() => setHoveredProductId(product.id)}
+                  onMouseLeave={() => setHoveredProductId(null)}
                 >
                   {/* Imagem do produto - proporção fixa e padronizada */}
                   <div className="relative w-full aspect-square overflow-hidden bg-gray-100 flex-shrink-0 flex items-center justify-center"> {/* Adicionado flex items-center justify-center */}
@@ -309,10 +312,18 @@ export default function ProductCatalog({ allProducts, categories, selectedCatego
                       {product.nome}
                     </h3>
 
-                    {/* Descrição truncada */}
-                    <p className="text-gray-600 text-xs sm:text-sm mb-3 h-4 sm:h-5 line-clamp-1 whitespace-pre-wrap"> {/* Adicionado whitespace-pre-wrap */}
-                      {product.descricao}
-                    </p>
+                    {/* Descrição truncada com Tooltip */}
+                    <div className="relative">
+                      <p className="text-gray-600 text-xs sm:text-sm mb-3 h-4 sm:h-5 line-clamp-1 whitespace-pre-wrap">
+                        {product.descricao}
+                      </p>
+                      {/* Tooltip que aparece no hover */}
+                      {hoveredProductId === product.id && product.descricao && (
+                        <div className="absolute z-20 top-full left-0 right-0 mt-1 p-3 bg-gray-900 text-white text-xs rounded shadow-lg pointer-events-none opacity-95">
+                          <p className="leading-relaxed whitespace-pre-wrap">{product.descricao}</p>
+                        </div>
+                      )}
+                    </div>
 
                     {/* Preço */}
                     <div className="mb-3 sm:mb-4">
