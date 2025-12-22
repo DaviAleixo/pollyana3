@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { MousePointerClick } from 'lucide-react';
+import { MousePointerClick, RotateCcw } from 'lucide-react';
 import { productsService } from '../services/products.service';
 import { clicksService } from '../services/clicks.service';
 import { ProductWithStats } from '../types';
@@ -61,6 +61,22 @@ export default function Reports() {
     setSortOrder(sortOrder === 'desc' ? 'asc' : 'desc');
   };
 
+  const handleResetAllClicks = async () => {
+    if (window.confirm('Tem certeza que deseja zerar *TODAS* as estatísticas de cliques? Esta ação é irreversível.')) {
+      setLoading(true);
+      try {
+        await clicksService.resetAll();
+        alert('Estatísticas de cliques zeradas com sucesso!');
+        await loadData();
+      } catch (error) {
+        console.error('Erro ao resetar cliques:', error);
+        alert('Erro ao resetar cliques.');
+      } finally {
+        setLoading(false);
+      }
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
@@ -72,13 +88,23 @@ export default function Reports() {
   return (
     <div>
       {/* Cabeçalho */}
-      <div className="mb-6">
-        <h1 className="text-2xl sm:text-3xl font-bold text-black mb-2">
-          Relatórios de Cliques
-        </h1>
-        <p className="text-gray-600">
-          Produtos mais clicados no catálogo
-        </p>
+      <div className="mb-6 flex justify-between items-center">
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-bold text-black mb-2">
+            Relatórios de Cliques
+          </h1>
+          <p className="text-gray-600">
+            Produtos mais clicados no catálogo
+          </p>
+        </div>
+        <button
+          onClick={handleResetAllClicks}
+          className="flex items-center gap-2 bg-red-600 text-white px-4 py-2 hover:bg-red-700 transition-colors text-sm font-medium"
+          disabled={totalClicks === 0}
+        >
+          <RotateCcw className="w-4 h-4" />
+          Resetar Cliques
+        </button>
       </div>
 
       {/* Card de resumo */}
