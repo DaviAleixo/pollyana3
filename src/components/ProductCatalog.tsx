@@ -310,7 +310,7 @@ export default function ProductCatalog({ allProducts, categories, selectedCatego
                     </h3>
 
                     {/* Descrição truncada */}
-                    <p className="text-gray-600 text-xs sm:text-sm mb-3 h-4 sm:h-5 line-clamp-1">
+                    <p className="text-gray-600 text-xs sm:text-sm mb-3 h-4 sm:h-5 line-clamp-1 whitespace-pre-wrap"> {/* Adicionado whitespace-pre-wrap */}
                       {product.descricao}
                     </p>
 

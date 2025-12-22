@@ -104,7 +104,7 @@ function App() {
                 onSortChange={setSortOption}
               />
               
-              <div className="pt-[152px] lg:pt-[124px]"> {/* Ajustado padding superior para 152px (mobile) e 124px (desktop) */}
+              <div className="pt-[160px] lg:pt-[124px]"> {/* Ajustado padding superior para 160px (mobile) para dar mais espaço */}
                 
                 <ProductCatalog
                   allProducts={allProducts}

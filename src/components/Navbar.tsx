@@ -101,7 +101,7 @@ export default function Navbar({ onMenuToggle, searchTerm, onSearchTermChange, o
         </div>
 
         {/* Linha 2 (Mobile Search Bar and Filter Button) */}
-        <div className="lg:hidden px-4 pb-3 max-w-7xl mx-auto flex items-center justify-between gap-4 border-t border-gray-100 mt-2">
+        <div className="lg:hidden px-4 pb-3 max-w-7xl mx-auto flex items-center justify-between gap-4 border-t border-gray-100 pt-3"> {/* Aumentado pt-3 para dar mais espaço */}
           <SearchBar
             onSearchTermChange={onSearchTermChange}
             initialSearchTerm={searchTerm}

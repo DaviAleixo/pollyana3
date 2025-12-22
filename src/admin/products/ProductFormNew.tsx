@@ -11,13 +11,7 @@ import { calculateDiscountedPrice } from '../../utils/productUtils';
 import { NumericFormat } from 'react-number-format';
 import { showError, showSuccess } from '../../utils/toast'; // Import toast utilities
 
-// Função auxiliar para formatar a data ISO do DB (YYYY-MM-DD HH:MM:SS) para o input datetime-local (YYYY-MM-DDTHH:MM)
-const formatIsoToLocal = (isoString: string | undefined): string => {
-  if (!isoString) return '';
-  // Remove 'Z' se existir e substitui espaço por 'T', e remove os segundos
-  const cleaned = isoString.replace('Z', '').replace(' ', 'T').slice(0, 16);
-  return cleaned;
-};
+// Funções de data removidas, pois não são mais necessárias para expiração.
 
 // Função auxiliar para converter a string local do input (YYYY-MM-DDTHH:MM) de volta para o formato de armazenamento (YYYY-MM-DD HH:MM:SS)
 const formatLocalToIso = (localString: string): string => {
@@ -76,12 +70,11 @@ export default function ProductFormNew() {
   const [discountActive, setDiscountActive] = useState(false);
   const [discountType, setDiscountType] = useState<DiscountType>('percentage');
   const [discountValue, setDiscountValue] = useState<number>(0);
-  const [discountExpiresAt, setDiscountExpiresAt] = useState<string>('');
+  // Data de expiração removida
 
   // ESTADOS PARA LANÇAMENTO
   const [isLaunch, setIsLaunch] = useState(false);
-  const [launchExpiresAt, setLaunchExpiresAt] = useState<string>('');
-  // launchOrder removido
+  // Data de expiração de lançamento removida
 
   const [formData, setFormData] = useState({
     nome: '',
@@ -100,10 +93,8 @@ export default function ProductFormNew() {
   useEffect(() => {
     const loadData = async () => {
       try {
-        // ✅ CORRETO: await nas chamadas assíncronas
         const fetchedAllCategories = await categoriesService.getAll();
         
-        // ✅ Validação de array - CORREÇÃO: fetchedAllCategories ao invés de fetchedCategories
         const validCategories = Array.isArray(fetchedAllCategories) ? fetchedAllCategories : [];
         
         setAllCategories(validCategories);
@@ -121,7 +112,6 @@ export default function ProductFormNew() {
               categoriaId: product.categoriaId,
               ativo: product.ativo,
               visivel: product.visivel,
-              // estoque: product.estoque, // REMOVIDO
             });
             setMainImagePreview(product.imagem);
 
@@ -137,12 +127,10 @@ export default function ProductFormNew() {
             setDiscountActive(product.discountActive || false);
             setDiscountType(product.discountType || 'percentage');
             setDiscountValue(product.discountValue || 0);
-            // ✅ CORREÇÃO: Converte a data do banco para o formato local do input
-            setDiscountExpiresAt(formatIsoToLocal(product.discountExpiresAt));
+            // setDiscountExpiresAt(formatIsoToLocal(product.discountExpiresAt)); // REMOVIDO
 
             setIsLaunch(product.isLaunch || false);
-            // ✅ CORREÇÃO: Converte a data do banco para o formato local do input
-            setLaunchExpiresAt(formatIsoToLocal(product.launchExpiresAt));
+            // setLaunchExpiresAt(formatIsoToLocal(product.launchExpiresAt)); // REMOVIDO
 
             const productCategory = validCategories.find(c => c.id === product.categoriaId);
             if (productCategory) {
@@ -454,18 +442,7 @@ export default function ProductFormNew() {
         showError('A porcentagem de desconto não pode ser maior que 100%.');
         return;
       }
-      if (!discountExpiresAt) {
-        showError('A data de expiração do desconto é obrigatória quando o desconto está ativo.');
-        return;
-      }
       
-      // ✅ CORREÇÃO: Usa parseLocalInputString para interpretar a data do input como local
-      const expirationDate = parseLocalInputString(discountExpiresAt);
-      if (expirationDate < new Date()) {
-        showError('A data de expiração do desconto deve ser no futuro.');
-        return;
-      }
-
       // Simular o produto para validar o preço final
       const tempProduct: Product = {
         ...formData,
@@ -474,7 +451,7 @@ export default function ProductFormNew() {
         discountActive,
         discountType,
         discountValue,
-        discountExpiresAt,
+        // discountExpiresAt: '2100-01-01 00:00:00', // Usar data futura fictícia para validação de preço
       };
       const finalPrice = calculateDiscountedPrice(tempProduct);
       if (finalPrice < 0) {
@@ -483,16 +460,7 @@ export default function ProductFormNew() {
       }
     }
 
-    // Validação do lançamento
-    if (isLaunch && launchExpiresAt) {
-      // ✅ CORREÇÃO: Usa parseLocalInputString para interpretar a data do input como local
-      const launchExpirationDate = parseLocalInputString(launchExpiresAt);
-      if (launchExpirationDate < new Date()) {
-        showError('A data de expiração do lançamento deve ser no futuro.');
-        return;
-      }
-    }
-
+    // Validação do lançamento (Nenhuma validação de data necessária)
 
     const estoqueTotal = variants.reduce((sum, v) => sum + v.estoque, 0);
 
@@ -507,11 +475,10 @@ export default function ProductFormNew() {
       discountActive: discountActive,
       discountType: discountActive ? discountType : undefined,
       discountValue: discountActive ? discountValue : undefined,
-      discountExpiresAt: discountActive ? formatLocalToIso(discountExpiresAt) : undefined, // SALVA NO FORMATO LOCAL
+      discountExpiresAt: undefined, // REMOVIDO
       // Dados de lançamento
       isLaunch: isLaunch,
-      launchExpiresAt: isLaunch && launchExpiresAt ? formatLocalToIso(launchExpiresAt) : undefined, // SALVA NO FORMATO LOCAL
-      // launchOrder removido
+      launchExpiresAt: undefined, // REMOVIDO
     };
 
     console.log('ProductFormNew.handleSubmit() - Product data being saved:', {
@@ -520,8 +487,6 @@ export default function ProductFormNew() {
       categoriaId: productData.categoriaId,
       estoque: productData.estoque,
       isLaunch: productData.isLaunch,
-      launchExpiresAt: productData.launchExpiresAt,
-      // launchOrder removido
       // ... other relevant fields
     });
 
@@ -983,26 +948,7 @@ export default function ProductFormNew() {
                 />
                 <span className="text-sm font-medium">Marcar como lançamento</span>
               </label>
-
-              {isLaunch && (
-                <>
-                  {/* Ordem de Prioridade REMOVIDA */}
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">
-                      Data de Expiração (opcional)
-                    </label>
-                    <input
-                      type="datetime-local"
-                      value={launchExpiresAt}
-                      onChange={(e) => setLaunchExpiresAt(e.target.value)}
-                      className="w-full border border-gray-300 px-4 py-2 focus:outline-none focus:border-black"
-                    />
-                    <p className="text-xs text-gray-500 mt-1">
-                      O produto sairá da seção de lançamentos automaticamente após esta data.
-                    </p>
-                  </div>
-                </>
-              )}
+              {/* Data de expiração removida */}
             </div>
           </div>
 
@@ -1068,23 +1014,11 @@ export default function ProductFormNew() {
                     />
                     {formData.preco > 0 && (
                       <p className="text-xs text-gray-500 mt-1">
-                        Preço final estimado: R$ {calculateDiscountedPrice({ ...formData, id: 0, estoque: 0, discountActive: true, discountType, discountValue, discountExpiresAt: '2100-01-01T00:00:00' }).toFixed(2)}
+                        Preço final estimado: R$ {calculateDiscountedPrice({ ...formData, id: 0, estoque: 0, discountActive: true, discountType, discountValue, discountExpiresAt: undefined }).toFixed(2)}
                       </p>
                     )}
                   </div>
-
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">
-                      Data de expiração *
-                    </label>
-                    <input
-                      type="datetime-local"
-                      value={discountExpiresAt}
-                      onChange={(e) => setDiscountExpiresAt(e.target.value)}
-                      className="w-full border border-gray-300 px-4 py-2 focus:outline-none focus:border-black"
-                      required
-                    />
-                  </div>
+                  {/* Data de expiração removida */}
                 </>
               )}
             </div>

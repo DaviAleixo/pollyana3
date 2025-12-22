@@ -158,13 +158,13 @@ export default function ProductModal({ product, isOpen, onClose, onAddToCart }: 
               onMouseEnter={() => setHoveredProduct(true)}
               onMouseLeave={() => setHoveredProduct(false)}
             >
-              <p className="text-gray-600 text-sm sm:text-base line-clamp-3 cursor-help">
+              <p className="text-gray-600 text-sm sm:text-base line-clamp-3 cursor-help whitespace-pre-wrap"> {/* Adicionado whitespace-pre-wrap */}
                 {product.descricao}
               </p>
 
               {hoveredProduct && product.descricao && product.descricao.length > 100 && (
                 <div className="absolute z-50 bottom-full left-0 right-0 mb-2 p-4 bg-gray-900 text-white text-sm rounded shadow-lg">
-                  <p className="leading-relaxed">{product.descricao}</p>
+                  <p className="leading-relaxed whitespace-pre-wrap">{product.descricao}</p> {/* Adicionado whitespace-pre-wrap */}
                   <div className="absolute top-full left-4 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900"></div>
                 </div>
               )}
