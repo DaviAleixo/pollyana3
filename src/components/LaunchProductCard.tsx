@@ -27,7 +27,7 @@ export default function LaunchProductCard({ product, onOpenModal }: LaunchProduc
         <img
           src={product.imagem || 'https://via.placeholder.com/600x600?text=Sem+Imagem'}
           alt={product.nome}
-          className="w-full h-full object-contain transition-transform duration-500" // Alterado para object-contain e removido group-hover:scale-105
+          className="w-full h-full object-contain transition-transform duration-500" // Alterado para object-contain
           onError={(e) => {
             (e.target as HTMLImageElement).src = 'https://via.placeholder.com/600x600?text=Sem+Imagem';
           }}
@@ -49,7 +49,7 @@ export default function LaunchProductCard({ product, onOpenModal }: LaunchProduc
           {product.nome}
         </h3>
 
-        <p className="text-gray-600 text-xs sm:text-sm mb-3 h-5 line-clamp-1">
+        <p className="text-gray-600 text-xs sm:text-sm mb-3 h-8 line-clamp-2 whitespace-pre-wrap"> {/* Aumentado h-5 para h-8 e line-clamp-1 para line-clamp-2 */}
           {product.descricao}
         </p>
 

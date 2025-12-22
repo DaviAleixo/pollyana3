@@ -140,7 +140,7 @@ export default function ProductModal({ product, isOpen, onClose, onAddToCart }: 
               <img
                 src={currentImage || 'https://via.placeholder.com/600x600?text=Sem+Imagem'}
                 alt={product.nome}
-                className="w-full h-full object-cover"
+                className="w-full h-full object-contain" // ALTERADO para object-contain
                 onError={(e) => {
                   (e.target as HTMLImageElement).src = 'https://via.placeholder.com/600x600?text=Sem+Imagem';
                 }}
