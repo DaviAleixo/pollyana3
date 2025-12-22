@@ -4,6 +4,7 @@ import { Edit, Trash2, Eye, EyeOff, ChevronRight, ChevronDown, Plus, ArrowUp, Ar
 import { Category } from '../../types';
 import { categoriesService } from '../../services/categories.service';
 import { productsService } from '../../services/products.service';
+import { showError, showSuccess } from '../../utils/toast'; // Import toast utilities
 
 interface CategoryTreeItemProps {
   category: Category;
@@ -53,7 +54,7 @@ const CategoryTreeItem: React.FC<CategoryTreeItemProps> = ({
 
   const handleDelete = async (id: number, nome: string) => {
     if (id === 1) {
-      alert('A categoria "Todos" não pode ser excluída.');
+      showError('A categoria "Todos" não pode ser excluída.');
       return;
     }
 
@@ -69,22 +70,32 @@ const CategoryTreeItem: React.FC<CategoryTreeItemProps> = ({
 
     if (window.confirm(message)) {
       try {
-        await categoriesService.delete(id);
-        onCategoryChange();
+        const success = await categoriesService.delete(id);
+        if (success) {
+          showSuccess(`Categoria "${nome}" excluída com sucesso.`);
+          onCategoryChange();
+        } else {
+          showError('Erro ao excluir categoria.');
+        }
       } catch (error) {
         console.error('Erro ao excluir categoria:', error);
-        alert('Erro ao excluir categoria');
+        showError('Erro ao excluir categoria');
       }
     }
   };
 
   const handleToggleVisible = async (id: number) => {
     try {
-      await categoriesService.update(id, { visivel: !category.visivel });
-      onCategoryChange();
+      const updatedCategory = await categoriesService.update(id, { visivel: !category.visivel });
+      if (updatedCategory) {
+        showSuccess(`Categoria ${updatedCategory.nome} agora está ${updatedCategory.visivel ? 'visível' : 'oculta'}.`);
+        onCategoryChange();
+      } else {
+        showError('Erro ao alterar visibilidade da categoria.');
+      }
     } catch (error) {
       console.error('Erro ao alterar visibilidade:', error);
-      alert('Erro ao alterar visibilidade da categoria');
+      showError('Erro ao alterar visibilidade da categoria');
     }
   };
 

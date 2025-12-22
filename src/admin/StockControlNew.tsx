@@ -3,6 +3,7 @@ import { Plus, Minus, AlertTriangle, Save } from 'lucide-react';
 import { productsService } from '../services/products.service';
 import { categoriesService } from '../services/categories.service';
 import { Product, Category, ProductVariant } from '../types';
+import { showError, showSuccess } from '../utils/toast'; // Import toast utilities
 
 type SortField = 'nome' | 'estoque';
 type SortOrder = 'asc' | 'desc';
@@ -135,16 +136,16 @@ export default function StockControlNew() {
         // Persistir a alteração no produto (variantes e estoque total)
         await productsService.update(productId, {
           variants: updatedVariants,
-          estoque: newTotalStock,
+          estoque: newTotalTotalStock,
         });
       }
 
       // Recarregar dados após salvar
       await loadProducts();
-      alert('Estoque atualizado com sucesso!');
+      showSuccess('Estoque atualizado com sucesso!');
     } catch (error) {
       console.error('Erro ao salvar estoque:', error);
-      alert('Erro ao salvar estoque. Verifique o console.');
+      showError('Erro ao salvar estoque. Verifique o console.');
     } finally {
       setIsSaving(false);
     }

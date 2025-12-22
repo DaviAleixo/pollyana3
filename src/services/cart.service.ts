@@ -4,6 +4,7 @@
 import { CartItem, Product, ProductColor, ProductVariant, DiscountType, ShippingAddress, ShippingOption } from '../types';
 import { storageService, STORAGE_KEYS } from './storage.service';
 import { calculateDiscountedPrice, isDiscountValid } from '../utils/productUtils'; // Importar utilitários de desconto
+import { showError } from '../utils/toast'; // Import toast utilities
 
 const CART_STORAGE_KEY = 'pollyana_cart';
 
@@ -28,6 +29,7 @@ class CartService {
 
     if (!variant) {
       console.error('Variação do produto não encontrada.');
+      showError('Variação do produto não encontrada. Tente selecionar cor e tamanho novamente.');
       return;
     }
 
@@ -47,7 +49,7 @@ class CartService {
       const newQuantity = existingItem.quantity + quantity;
 
       if (newQuantity > variant.estoque) {
-        alert(`Não há estoque suficiente para adicionar ${quantity} unidades. Disponível: ${variant.estoque - existingItem.quantity}`);
+        showError(`Não há estoque suficiente para adicionar ${quantity} unidades. Disponível: ${variant.estoque - existingItem.quantity}`);
         return;
       }
 
@@ -58,7 +60,7 @@ class CartService {
     } else {
       // Adiciona novo item
       if (quantity > variant.estoque) {
-        alert(`Não há estoque suficiente para adicionar ${quantity} unidades. Disponível: ${variant.estoque}`);
+        showError(`Não há estoque suficiente para adicionar ${quantity} unidades. Disponível: ${variant.estoque}`);
         return;
       }
 
@@ -95,7 +97,7 @@ class CartService {
     if (itemIndex > -1) {
       const item = items[itemIndex];
       if (newQuantity > item.stockAvailable) {
-        alert(`Não há estoque suficiente. Disponível: ${item.stockAvailable}`);
+        showError(`Não há estoque suficiente. Disponível: ${item.stockAvailable}`);
         return;
       }
       if (newQuantity <= 0) {

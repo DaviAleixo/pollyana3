@@ -7,6 +7,7 @@ import { clicksService } from '../services/clicks.service'; // Importar clicksSe
 import { CartItem, ShippingAddress, ShippingOption } from '../types';
 import CountdownTimer from '../components/CountdownTimer';
 import CepInput from '../components/CepInput';
+import { showError, showSuccess } from '../utils/toast'; // Import toast utilities
 
 export default function CartPage() {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
@@ -73,18 +74,19 @@ export default function CartPage() {
   const handleRemoveItem = (itemId: string) => {
     if (window.confirm('Deseja remover este item do carrinho?')) {
       cartService.removeItem(itemId);
+      showSuccess('Item removido do carrinho.');
     }
   };
 
   const handleFinalizeOrder = async () => {
     if (!selectedShippingOption) {
-      alert('Por favor, selecione uma opção de frete para finalizar o pedido.');
+      showError('Por favor, selecione uma opção de frete para finalizar o pedido.');
       return;
     }
 
     // Se a opção for entrega (não retirada na loja) E não houver endereço, impede a finalização
     if (selectedShippingOption.type !== 'store_pickup' && !shippingAddress) {
-      alert('Por favor, informe o CEP para entrega ou selecione Retirada na Loja.');
+      showError('Por favor, informe o CEP para entrega ou selecione Retirada na Loja.');
       return;
     }
 
@@ -103,6 +105,7 @@ export default function CartPage() {
     cartService.clearCart();
     setShippingAddress(null);
     setSelectedShippingOption(null);
+    showSuccess('Pedido enviado para o WhatsApp! Carrinho limpo.');
   };
 
   // Lógica de habilitação do botão

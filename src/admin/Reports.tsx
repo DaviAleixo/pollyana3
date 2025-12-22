@@ -3,6 +3,7 @@ import { MousePointerClick, RotateCcw } from 'lucide-react';
 import { productsService } from '../services/products.service';
 import { clicksService } from '../services/clicks.service';
 import { ProductWithStats } from '../types';
+import { showError, showSuccess } from '../utils/toast'; // Import toast utilities
 
 type SortOrder = 'desc' | 'asc';
 
@@ -66,11 +67,11 @@ export default function Reports() {
       setLoading(true);
       try {
         await clicksService.resetAll();
-        alert('Estatísticas de cliques zeradas com sucesso!');
+        showSuccess('Estatísticas de cliques zeradas com sucesso!');
         await loadData();
       } catch (error) {
         console.error('Erro ao resetar cliques:', error);
-        alert('Erro ao resetar cliques.');
+        showError('Erro ao resetar cliques.');
       } finally {
         setLoading(false);
       }

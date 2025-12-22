@@ -3,6 +3,7 @@ import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { categoriesService } from '../../services/categories.service';
 import { Category } from '../../types';
+import { showError, showSuccess } from '../../utils/toast';
 
 export default function CategoryForm() {
   const navigate = useNavigate();
@@ -17,18 +18,18 @@ export default function CategoryForm() {
     slug: '', // Será gerado automaticamente
   });
   const [allCategories, setAllCategories] = useState<Category[]>([]);
-  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  // Removido: const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
  useEffect(() => {
   async function loadData() {
     const fetchedCategories = await categoriesService.getAll();
-    setAllCategories(fetchedCategories);
+    setAllCategories(Array.isArray(fetchedCategories) ? fetchedCategories : []);
 
     if (isEditing && id) {
       const category = await categoriesService.getById(parseInt(id));
       if (category) {
         if (category.id === 1) {
-          alert('A categoria "Todos" não pode ser editada.');
+          showError('A categoria "Todos" não pode ser editada.');
           navigate('/admin/categorias');
           return;
         }
@@ -40,7 +41,7 @@ export default function CategoryForm() {
           slug: category.slug,
         });
       } else {
-        alert('Categoria não encontrada');
+        showError('Categoria não encontrada');
         navigate('/admin/categorias');
       }
     } else {
@@ -88,28 +89,18 @@ export default function CategoryForm() {
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setMessage(null);
 
     if (!formData.nome.trim()) {
-      setMessage({ type: 'error', text: 'Nome é obrigatório.' });
+      showError('Nome é obrigatório.');
       return;
     }
 
-    // Validação de categoria pai: não pode ser ela mesma ou um descendente
+    // Validação de categoria pai: não pode ser ela mesma
     if (isEditing && formData.parentId === parseInt(id!)) {
-      setMessage({ type: 'error', text: 'Uma categoria não pode ser sua própria pai.' });
+      showError('Uma categoria não pode ser sua própria pai.');
       return;
-    }
-    if (isEditing && formData.parentId) {
-      // NOTE: categoriesService.getDescendants é assíncrono, mas aqui estamos usando a versão síncrona que não existe mais.
-      // Como o serviço foi atualizado para ser assíncrono, precisamos garantir que a chamada seja feita corretamente.
-      // No entanto, para manter a simplicidade e evitar refatorar todo o hook para async/await, vamos assumir que a validação de descendentes é menos crítica no momento da submissão,
-      // ou que o serviço de categorias deve ser refatorado para ter uma versão síncrona para este tipo de validação rápida.
-      // Como o serviço de categorias foi atualizado para ser assíncrono, vou envolver a lógica de submissão em uma função assíncrona.
-      
-      // Revertendo a validação de descendentes para evitar complexidade desnecessária no front-end, já que a lógica de reordenação no backend (service) deve prevenir loops.
     }
 
     const dataToSave = {
@@ -118,13 +109,29 @@ export default function CategoryForm() {
       parentId: formData.parentId,
     };
 
+    let success = false;
+
     if (isEditing && id) {
-      categoriesService.update(parseInt(id), dataToSave);
+      const result = await categoriesService.update(parseInt(id), dataToSave);
+      if (result) {
+        showSuccess('Categoria atualizada com sucesso!');
+        success = true;
+      } else {
+        showError('Erro ao atualizar categoria.');
+      }
     } else {
-      categoriesService.create(dataToSave);
+      const result = await categoriesService.create(dataToSave);
+      if (result) {
+        showSuccess('Categoria criada com sucesso!');
+        success = true;
+      } else {
+        showError('Erro ao criar categoria.');
+      }
     }
 
-    navigate('/admin/categorias');
+    if (success) {
+      navigate('/admin/categorias');
+    }
   };
 
   // Filtrar categorias para o dropdown de pai (excluir a própria categoria e seus descendentes)
@@ -132,7 +139,6 @@ export default function CategoryForm() {
     if (cat.id === 1) return false; // Não pode ser filho de "Todos"
     if (!isEditing) return true; // Para criação, todas são válidas
     if (cat.id === parseInt(id!)) return false; // Não pode ser pai de si mesma
-    // A validação de descendentes é complexa de forma síncrona, vamos confiar na lógica de reordenação do serviço.
     return true;
   });
 
@@ -233,19 +239,6 @@ export default function CategoryForm() {
             </label>
           </div>
         </div>
-
-        {message && (
-          <div
-            className={`mt-6 p-3 text-sm ${
-              message.type === 'success'
-                ? 'bg-green-100 border border-green-400 text-green-700'
-                : 'bg-red-100 border border-red-400 text-red-700'
-            }`}
-            role="alert"
-          >
-            {message.text}
-          </div>
-        )}
 
         {/* Botões de ação */}
         <div className="flex gap-4 mt-6 pt-6 border-t border-gray-200">

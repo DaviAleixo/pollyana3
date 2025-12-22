@@ -6,7 +6,8 @@ import { productsService } from '../../services/products.service';
 import { categoriesService } from '../../services/categories.service';
 import { Banner, BannerLinkType, Product, Category } from '../../types';
 import { resizeImage, validateFileSize, validateFileType } from '../../utils/imageUtils';
-import SearchSelectInput from '../../components/SearchSelectInput'; // Importar o novo componente
+import SearchSelectInput from '../../components/SearchSelectInput';
+import { showError, showSuccess } from '../../utils/toast'; // Import toast utilities
 
 export default function BannerForm() {
   const navigate = useNavigate();
@@ -54,6 +55,7 @@ export default function BannerForm() {
       }
     } catch (error) {
       console.error('Erro ao carregar dados do formulário de banner:', error);
+      showError('Erro ao carregar dados do banner.');
       navigate('/admin/banners');
     } finally {
       setLoadingData(false);
@@ -84,12 +86,12 @@ export default function BannerForm() {
     if (!file) return;
 
     if (!validateFileType(file)) {
-      alert('Tipo de arquivo inválido. Use JPG, PNG ou WEBP.');
+      showError('Tipo de arquivo inválido. Use JPG, PNG ou WEBP.');
       return;
     }
 
     if (!validateFileSize(file, 10)) {
-      alert('Arquivo muito grande. Tamanho máximo: 10MB');
+      showError('Arquivo muito grande. Tamanho máximo: 10MB');
       return;
     }
 
@@ -102,9 +104,10 @@ export default function BannerForm() {
       });
       setFormData(prev => ({ ...prev, imageUrl: resizedImage }));
       setImagePreview(resizedImage);
+      showSuccess('Imagem do banner carregada.');
     } catch (error) {
       console.error('Erro ao processar imagem do banner:', error);
-      alert('Erro ao processar imagem do banner');
+      showError('Erro ao processar imagem do banner');
     } finally {
       setImageUploadLoading(false);
     }
@@ -138,17 +141,17 @@ export default function BannerForm() {
     e.preventDefault();
 
     if (!formData.imageUrl) {
-      alert('A imagem do banner é obrigatória.');
+      showError('A imagem do banner é obrigatória.');
       return;
     }
 
     if (formData.linkType === 'product' && !formData.linkedProductId) {
-      alert('Selecione um produto para o banner.');
+      showError('Selecione um produto para o banner.');
       return;
     }
 
     if (formData.linkType === 'category' && !formData.linkedCategoryId) {
-      alert('Selecione uma categoria para o banner.');
+      showError('Selecione uma categoria para o banner.');
       return;
     }
 
@@ -156,17 +159,32 @@ export default function BannerForm() {
       formData.linkType === 'external' &&
       (!formData.externalUrl || !/^https?:\/\/.+/.test(formData.externalUrl))
     ) {
-      alert('Insira uma URL externa válida (começando com http:// ou https://).');
+      showError('Insira uma URL externa válida (começando com http:// ou https://).');
       return;
     }
 
+    let success = false;
     if (isEditing && id) {
-      await bannersService.update(parseInt(id), formData);
+      const result = await bannersService.update(parseInt(id), formData);
+      if (result) {
+        showSuccess('Banner atualizado com sucesso!');
+        success = true;
+      } else {
+        showError('Erro ao atualizar banner.');
+      }
     } else {
-      await bannersService.create(formData);
+      const result = await bannersService.create(formData);
+      if (result) {
+        showSuccess('Banner criado com sucesso!');
+        success = true;
+      } else {
+        showError('Erro ao criar banner.');
+      }
     }
 
-    navigate('/admin/banners');
+    if (success) {
+      navigate('/admin/banners');
+    }
   };
 
   // Mapeamento de produtos para o formato SearchSelectInput

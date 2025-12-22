@@ -5,6 +5,7 @@ import { productsService } from '../../services/products.service';
 import { categoriesService } from '../../services/categories.service';
 import { stockService } from '../../services/stock.service';
 import { Product, Category } from '../../types';
+import { showError, showSuccess } from '../../utils/toast'; // Import toast utilities
 
 // Página de listagem de produtos
 // Exibe tabela com todos os produtos e ações de CRUD
@@ -48,11 +49,16 @@ export default function ProductsList() {
   const handleDelete = async (id: number, nome: string) => {
     if (window.confirm(`Deseja realmente excluir o produto "${nome}"?`)) {
       try {
-        await productsService.delete(id);
-        await loadData();
+        const success = await productsService.delete(id);
+        if (success) {
+          showSuccess(`Produto "${nome}" excluído com sucesso!`);
+          await loadData();
+        } else {
+          showError(`Erro ao excluir produto "${nome}".`);
+        }
       } catch (error) {
         console.error('Erro ao excluir produto:', error);
-        alert('Erro ao excluir produto');
+        showError('Erro ao excluir produto');
       }
     }
   };
@@ -60,22 +66,32 @@ export default function ProductsList() {
   // Alternar status ativo
   const handleToggleActive = async (id: number) => {
     try {
-      await productsService.toggleActive(id);
-      await loadData();
+      const product = await productsService.toggleActive(id);
+      if (product) {
+        showSuccess(`Produto ${product.nome} ${product.ativo ? 'ativado' : 'desativado'} com sucesso!`);
+        await loadData();
+      } else {
+        showError('Erro ao alterar status do produto.');
+      }
     } catch (error) {
       console.error('Erro ao alterar status:', error);
-      alert('Erro ao alterar status do produto');
+      showError('Erro ao alterar status do produto');
     }
   };
 
   // Alternar visibilidade
   const handleToggleVisible = async (id: number) => {
     try {
-      await productsService.toggleVisible(id);
-      await loadData();
+      const product = await productsService.toggleVisible(id);
+      if (product) {
+        showSuccess(`Produto ${product.nome} agora está ${product.visivel ? 'visível' : 'oculto'} no catálogo.`);
+        await loadData();
+      } else {
+        showError('Erro ao alterar visibilidade do produto.');
+      }
     } catch (error) {
       console.error('Erro ao alterar visibilidade:', error);
-      alert('Erro ao alterar visibilidade do produto');
+      showError('Erro ao alterar visibilidade do produto');
     }
   };
 
@@ -197,7 +213,7 @@ export default function ProductsList() {
                       <Link
                         to={`/admin/estoque`}
                         className={`inline-flex items-center gap-1 px-3 py-1 font-semibold text-sm transition-colors ${
-                          stockService.isLowStock(product.id)
+                          product.estoque <= 5
                             ? 'bg-red-100 text-red-700 hover:bg-red-200'
                             : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                         }`}

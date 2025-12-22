@@ -5,6 +5,7 @@ import { bannersService } from '../../services/banners.service';
 import { productsService } from '../../services/products.service';
 import { categoriesService } from '../../services/categories.service';
 import { Banner } from '../../types';
+import { showError, showSuccess } from '../../utils/toast'; // Import toast utilities
 
 export default function BannersList() {
   const [banners, setBanners] = useState<Banner[]>([]);
@@ -27,16 +28,6 @@ export default function BannersList() {
   const getLinkDescription = (banner: Banner) => {
     switch (banner.linkType) {
       case 'product': {
-        // Usar getById assíncrono
-        // Nota: Não podemos usar await diretamente aqui, pois getLinkDescription é síncrono.
-        // Para evitar chamadas assíncronas em renderização, vamos manter a busca síncrona
-        // ou aceitar que a descrição do link pode ser 'Não encontrado' até que o produto seja carregado.
-        // Como o productsService.getById é assíncrono, vamos assumir que ele retorna undefined/null
-        // se não for encontrado imediatamente (o que é o caso com o Supabase dummy client).
-        // No entanto, para o contexto do Admin, onde a lista de produtos é carregada em outro lugar,
-        // vamos manter a chamada síncrona para evitar refatorar toda a tabela para async.
-        // Se o Supabase estivesse configurado, isso seria um problema.
-        // Como o productsService.getById é assíncrono, vou removê-lo e simplificar a descrição.
         return `Produto ID: ${banner.linkedProductId}`;
       }
       case 'category': {
@@ -53,14 +44,34 @@ export default function BannersList() {
 
   const handleDelete = async (id: number, textOverlay?: string) => {
     if (window.confirm(`Deseja realmente excluir o banner "${textOverlay || id}"?`)) {
-      await bannersService.delete(id);
-      await loadData();
+      try {
+        const success = await bannersService.delete(id);
+        if (success) {
+          showSuccess('Banner excluído com sucesso!');
+          await loadData();
+        } else {
+          showError('Erro ao excluir banner.');
+        }
+      } catch (error) {
+        console.error('Erro ao deletar banner:', error);
+        showError('Erro ao excluir banner.');
+      }
     }
   };
 
   const handleToggleVisibility = async (id: number) => {
-    await bannersService.toggleVisibility(id);
-    await loadData();
+    try {
+      const updatedBanner = await bannersService.toggleVisibility(id);
+      if (updatedBanner) {
+        showSuccess(`Banner agora está ${updatedBanner.isVisible ? 'visível' : 'oculto'}.`);
+        await loadData();
+      } else {
+        showError('Erro ao alterar visibilidade do banner.');
+      }
+    } catch (error) {
+      console.error('Erro ao alterar visibilidade:', error);
+      showError('Erro ao alterar visibilidade do banner.');
+    }
   };
 
   const handleMoveBanner = async (id: number, direction: 'up' | 'down') => {
@@ -78,14 +89,19 @@ export default function BannersList() {
     const orderA = bannerA.order;
     const orderB = bannerB.order;
 
-    // Atualiza ambos os banners no banco de dados
-    await Promise.all([
-      bannersService.update(bannerA.id, { order: orderB }),
-      bannersService.update(bannerB.id, { order: orderA }),
-    ]);
-
-    // Recarrega os dados para refletir a nova ordem
-    await loadData();
+    try {
+      // Atualiza ambos os banners no banco de dados
+      await Promise.all([
+        bannersService.update(bannerA.id, { order: orderB }),
+        bannersService.update(bannerB.id, { order: orderA }),
+      ]);
+      showSuccess('Ordem do banner atualizada.');
+      // Recarrega os dados para refletir a nova ordem
+      await loadData();
+    } catch (error) {
+      console.error('Erro ao mover banner:', error);
+      showError('Erro ao reordenar banners.');
+    }
   };
 
   return (

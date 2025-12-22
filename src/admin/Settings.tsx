@@ -7,25 +7,26 @@ import { NumericFormat } from 'react-number-format';
 import { storageService, STORAGE_KEYS } from '../services/storage.service';
 import { resizeImage, validateFileSize, validateFileType } from '../utils/imageUtils';
 import defaultLogoImage from '/attached_assets/WhatsApp_Image_2025-11-25_at_15.53.40-removebg-preview_1765314447113.png';
+import { showError, showSuccess } from '../utils/toast'; // Import toast utilities
 
 export default function Settings() {
   const [currentUsername, setCurrentUsername] = useState('');
   const [newUsername, setNewUsername] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmNewPassword, setConfirmNewPassword] = useState('');
-  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  // Removido: const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   // Estados para as configurações de frete
   const [storeCity, setStoreCity] = useState('');
   const [localDeliveryCost, setLocalDeliveryCost] = useState(0);
   const [standardShippingCost, setStandardShippingCost] = useState(0);
   const [storePickupCost, setStorePickupCost] = useState(0);
-  const [shippingMessage, setShippingMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  // Removido: const [shippingMessage, setShippingMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   // Estados para a Logo
   const [logoUrl, setLogoUrl] = useState(defaultLogoImage);
   const [logoUploadLoading, setLogoUploadLoading] = useState(false);
-  const [logoMessage, setLogoMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  // Removido: const [logoMessage, setLogoMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
 
   useEffect(() => {
@@ -52,7 +53,6 @@ export default function Settings() {
 
   const handleSubmitAuth = (e: React.FormEvent) => {
     e.preventDefault();
-    setMessage(null);
 
     let changesMade = false;
     let successMessages: string[] = [];
@@ -89,24 +89,23 @@ export default function Settings() {
     }
 
     if (errorMessages.length > 0) {
-      setMessage({ type: 'error', text: errorMessages.join(' ') });
+      showError(errorMessages.join(' '));
     } else if (successMessages.length > 0) {
-      setMessage({ type: 'success', text: successMessages.join(' ') });
+      showSuccess(successMessages.join(' '));
     } else if (!changesMade) {
-      setMessage({ type: 'error', text: 'Nenhuma alteração foi feita. Preencha os campos que deseja atualizar.' });
+      showError('Nenhuma alteração foi feita. Preencha os campos que deseja atualizar.');
     }
   };
 
   const handleSubmitShipping = async (e: React.FormEvent) => {
     e.preventDefault();
-    setShippingMessage(null);
 
     if (!storeCity.trim()) {
-      setShippingMessage({ type: 'error', text: 'A cidade da loja é obrigatória.' });
+      showError('A cidade da loja é obrigatória.');
       return;
     }
     if (localDeliveryCost < 0 || standardShippingCost < 0 || storePickupCost < 0) {
-      setShippingMessage({ type: 'error', text: 'Os custos de frete não podem ser negativos.' });
+      showError('Os custos de frete não podem ser negativos.');
       return;
     }
 
@@ -117,10 +116,10 @@ export default function Settings() {
             standardShippingCost: standardShippingCost,
             storePickupCost: storePickupCost,
         });
-        setShippingMessage({ type: 'success', text: 'Configurações de frete salvas com sucesso!' });
+        showSuccess('Configurações de frete salvas com sucesso!');
     } catch (error) {
         console.error("Erro ao salvar configurações de frete:", error);
-        setShippingMessage({ type: 'error', text: 'Erro ao salvar configurações de frete. Verifique o console.' });
+        showError('Erro ao salvar configurações de frete. Verifique o console.');
     }
   };
   
@@ -129,17 +128,16 @@ export default function Settings() {
     if (!file) return;
 
     if (!validateFileType(file)) {
-      setLogoMessage({ type: 'error', text: 'Tipo de arquivo inválido. Use JPG, PNG ou WEBP.' });
+      showError('Tipo de arquivo inválido. Use JPG, PNG ou WEBP.');
       return;
     }
 
     if (!validateFileSize(file, 2)) { // Limite de 2MB para logo
-      setLogoMessage({ type: 'error', text: 'Arquivo muito grande. Tamanho máximo: 2MB' });
+      showError('Arquivo muito grande. Tamanho máximo: 2MB');
       return;
     }
 
     setLogoUploadLoading(true);
-    setLogoMessage(null);
     try {
       // Redimensionar para um tamanho razoável para logo (ex: 400x400)
       const resizedImage = await resizeImage(file, {
@@ -150,11 +148,11 @@ export default function Settings() {
       
       storageService.set(STORAGE_KEYS.CUSTOM_LOGO_URL, resizedImage);
       setLogoUrl(resizedImage);
-      setLogoMessage({ type: 'success', text: 'Logo atualizada com sucesso!' });
+      showSuccess('Logo atualizada com sucesso!');
       window.dispatchEvent(new Event('storage')); // Notificar Navbar
     } catch (error) {
       console.error('Erro ao processar imagem da logo:', error);
-      setLogoMessage({ type: 'error', text: 'Erro ao processar imagem da logo.' });
+      showError('Erro ao processar imagem da logo.');
     } finally {
       setLogoUploadLoading(false);
     }
@@ -164,7 +162,7 @@ export default function Settings() {
     if (window.confirm('Deseja remover a logo personalizada e voltar para a logo padrão?')) {
       storageService.remove(STORAGE_KEYS.CUSTOM_LOGO_URL);
       setLogoUrl(defaultLogoImage);
-      setLogoMessage({ type: 'success', text: 'Logo removida. Usando logo padrão.' });
+      showSuccess('Logo removida. Usando logo padrão.');
       window.dispatchEvent(new Event('storage')); // Notificar Navbar
     }
   };
@@ -216,18 +214,7 @@ export default function Settings() {
                 Recomendado: Imagem quadrada ou retangular com fundo transparente (PNG). Máx 2MB.
             </p>
         </div>
-        {logoMessage && (
-          <div
-            className={`mt-4 p-3 text-sm ${
-              logoMessage.type === 'success'
-                ? 'bg-green-100 border border-green-400 text-green-700'
-                : 'bg-red-100 border border-red-400 text-red-700'
-            }`}
-            role="alert"
-          >
-            {logoMessage.text}
-          </div>
-        )}
+        {/* Removido: logoMessage display logic */}
       </div>
 
       {/* Seção de Credenciais */}
@@ -290,18 +277,7 @@ export default function Settings() {
           </div>
         </div>
 
-        {message && (
-          <div
-            className={`mt-6 p-3 text-sm ${
-              message.type === 'success'
-                ? 'bg-green-100 border border-green-400 text-green-700'
-                : 'bg-red-100 border border-red-400 text-red-700'
-            }`}
-            role="alert"
-          >
-            {message.text}
-          </div>
-        )}
+        {/* Removido: message display logic */}
 
         <div className="flex gap-4 mt-6 pt-6 border-t border-gray-200">
           <button
@@ -374,18 +350,7 @@ export default function Settings() {
           </div>
         </div>
 
-        {shippingMessage && (
-          <div
-            className={`mt-6 p-3 text-sm ${
-              shippingMessage.type === 'success'
-                ? 'bg-green-100 border border-green-400 text-green-700'
-                : 'bg-red-100 border border-red-400 text-red-700'
-            }`}
-            role="alert"
-          >
-            {shippingMessage.text}
-          </div>
-        )}
+        {/* Removido: shippingMessage display logic */}
 
         <div className="flex gap-4 mt-6 pt-6 border-t border-gray-200">
           <button

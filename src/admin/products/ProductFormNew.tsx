@@ -8,14 +8,17 @@ import { resizeImage, validateFileSize, validateFileType } from '../../utils/ima
 import { STANDARD_COLORS, getNearestColorName } from '../../utils/colorUtils';
 import ColorPicker from '../../components/ColorPicker';
 import { calculateDiscountedPrice } from '../../utils/productUtils';
-import { NumericFormat } from 'react-number-format'; // Importar NumericFormat
+import { NumericFormat } from 'react-number-format';
+import { showError, showSuccess } from '../../utils/toast'; // Import toast utilities
 
 // Função auxiliar para formatar a data ISO para o input datetime-local
 // Converte o formato de armazenamento (YYYY-MM-DD HH:MM:SS) para o formato do input (YYYY-MM-DDTHH:MM)
 const formatIsoToLocal = (isoString: string | undefined): string => {
   if (!isoString) return '';
-  // Substitui o espaço por 'T' e remove segundos se existirem
-  return isoString.replace(' ', 'T').slice(0, 16);
+  // Remove 'Z' se existir (indica UTC) e substitui espaço por 'T'
+  // Também remove os segundos para o formato do input datetime-local
+  const cleaned = isoString.replace('Z', '').replace(' ', 'T').slice(0, 16);
+  return cleaned;
 };
 
 // Função auxiliar para converter a string local do input de volta para o formato de armazenamento
@@ -76,77 +79,80 @@ export default function ProductFormNew() {
   const tamanhosPadrao = ['P', 'M', 'G', 'GG', 'TAM ÚNICO'];
   const tamanhosNumeracao = ['34', '36', '38', '40', '42', '44', '46', '48'];
 
-useEffect(() => {
-  const loadData = async () => {
-    try {
-      // ✅ CORRETO: await nas chamadas assíncronas
-      const fetchedAllCategories = await categoriesService.getAll();
-      
-      // ✅ Validação de array
-      const validCategories = Array.isArray(fetchedAllCategories) ? fetchedCategories : [];
-      
-      setAllCategories(validCategories);
-      setMainCategories(validCategories.filter(c => c.parentId === null));
-
-      if (isEditing && id) {
-        const product = await productsService.getById(parseInt(id));
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        // ✅ CORRETO: await nas chamadas assíncronas
+        const fetchedAllCategories = await categoriesService.getAll();
         
-        if (product) {
-          setFormData({
-            nome: product.nome,
-            preco: product.preco,
-            descricao: product.descricao,
-            imagem: product.imagem,
-            categoriaId: product.categoriaId,
-            ativo: product.ativo,
-            visivel: product.visivel,
-            // estoque: product.estoque, // REMOVIDO
-          });
-          setMainImagePreview(product.imagem);
+        // ✅ Validação de array - CORREÇÃO: fetchedAllCategories ao invés de fetchedCategories
+        const validCategories = Array.isArray(fetchedAllCategories) ? fetchedAllCategories : [];
+        
+        setAllCategories(validCategories);
+        setMainCategories(validCategories.filter(c => c.parentId === null));
 
-          if (product.tipoTamanho) setTipoTamanho(product.tipoTamanho);
-          if (product.cores) {
-            setStandardColorsWithImages(product.cores.filter(c => !c.isCustom));
-            setCustomColors(product.cores.filter(c => c.isCustom));
-            if (product.cores.some(c => c.isCustom)) setCustomColorsEnabled(true);
-          }
-          if (product.variants) setVariants(product.variants);
-          setImagesRequiredForColors(product.imagesRequiredForColors || false);
+        if (isEditing && id) {
+          const product = await productsService.getById(parseInt(id));
+          
+          if (product) {
+            setFormData({
+              nome: product.nome,
+              preco: product.preco,
+              descricao: product.descricao,
+              imagem: product.imagem,
+              categoriaId: product.categoriaId,
+              ativo: product.ativo,
+              visivel: product.visivel,
+              // estoque: product.estoque, // REMOVIDO
+            });
+            setMainImagePreview(product.imagem);
 
-          setDiscountActive(product.discountActive || false);
-          setDiscountType(product.discountType || 'percentage');
-          setDiscountValue(product.discountValue || 0);
-          setDiscountExpiresAt(product.discountExpiresAt || '');
-
-          setIsLaunch(product.isLaunch || false);
-          setLaunchExpiresAt(product.launchExpiresAt || '');
-
-          const productCategory = validCategories.find(c => c.id === product.categoriaId);
-          if (productCategory) {
-            if (productCategory.parentId !== null) {
-              setSelectedMainCategoryId(productCategory.parentId);
-            } else {
-              setSelectedMainCategoryId(productCategory.id);
+            if (product.tipoTamanho) setTipoTamanho(product.tipoTamanho);
+            if (product.cores) {
+              setStandardColorsWithImages(product.cores.filter(c => !c.isCustom));
+              setCustomColors(product.cores.filter(c => c.isCustom));
+              if (product.cores.some(c => c.isCustom)) setCustomColorsEnabled(true);
             }
+            if (product.variants) setVariants(product.variants);
+            setImagesRequiredForColors(product.imagesRequiredForColors || false);
+
+            setDiscountActive(product.discountActive || false);
+            setDiscountType(product.discountType || 'percentage');
+            setDiscountValue(product.discountValue || 0);
+            // ✅ CORREÇÃO: Converte a data do banco para o formato local do input
+            setDiscountExpiresAt(formatIsoToLocal(product.discountExpiresAt));
+
+            setIsLaunch(product.isLaunch || false);
+            // ✅ CORREÇÃO: Converte a data do banco para o formato local do input
+            setLaunchExpiresAt(formatIsoToLocal(product.launchExpiresAt));
+
+            const productCategory = validCategories.find(c => c.id === product.categoriaId);
+            if (productCategory) {
+              if (productCategory.parentId !== null) {
+                setSelectedMainCategoryId(productCategory.parentId);
+              } else {
+                setSelectedMainCategoryId(productCategory.id);
+              }
+            }
+          } else {
+            navigate('/admin/produtos');
           }
         } else {
-          navigate('/admin/produtos');
+          // Para novos produtos, define a categoria padrão como 'Todos' (ID 1)
+          setFormData(prev => ({ ...prev, categoriaId: 1 }));
+          setSelectedMainCategoryId(1);
         }
-      } else {
-        // Para novos produtos, define a categoria padrão como 'Todos' (ID 1)
-        setFormData(prev => ({ ...prev, categoriaId: 1 }));
-        setSelectedMainCategoryId(1);
+      } catch (error) {
+        console.error('Erro ao carregar dados:', error);
+        setAllCategories([]);
+        setMainCategories([]);
+        navigate('/admin/produtos');
       }
-    } catch (error) {
-      console.error('Erro ao carregar dados:', error);
-      setAllCategories([]);
-      setMainCategories([]);
-      navigate('/admin/produtos');
-    }
-  };
+    };
 
-  loadData();
-}, [id, isEditing, navigate]);
+    loadData();
+  }, [id, isEditing, navigate]);
+  
   // Efeito para atualizar as subcategorias quando a categoria principal selecionada muda
   useEffect(() => {
     if (selectedMainCategoryId !== null) {
@@ -210,12 +216,12 @@ useEffect(() => {
     if (!file) return;
 
     if (!validateFileType(file)) {
-      alert('Tipo de arquivo inválido. Use JPG, PNG ou WEBP.');
+      showError('Tipo de arquivo inválido. Use JPG, PNG ou WEBP.');
       return;
     }
 
     if (!validateFileSize(file)) {
-      alert('Arquivo muito grande. Tamanho máximo: 5MB');
+      showError('Arquivo muito grande. Tamanho máximo: 5MB');
       return;
     }
 
@@ -225,9 +231,10 @@ useEffect(() => {
       const resizedImage = await resizeImage(file);
       setFormData((prev) => ({ ...prev, imagem: resizedImage }));
       setMainImagePreview(resizedImage);
+      showSuccess('Imagem principal carregada.');
     } catch (error) {
       console.error('Erro ao processar imagem principal:', error);
-      alert('Erro ao processar imagem principal');
+      showError('Erro ao processar imagem principal');
     } finally {
       setMainImageUploadLoading(false);
     }
@@ -254,12 +261,12 @@ useEffect(() => {
     if (!file) return;
 
     if (!validateFileType(file)) {
-      alert('Tipo de arquivo inválido. Use JPG, PNG ou WEBP.');
+      showError('Tipo de arquivo inválido. Use JPG, PNG ou WEBP.');
       return;
     }
 
     if (!validateFileSize(file)) {
-      alert('Arquivo muito grande. Tamanho máximo: 5MB');
+      showError('Arquivo muito grande. Tamanho máximo: 5MB');
       return;
     }
 
@@ -268,9 +275,10 @@ useEffect(() => {
       setStandardColorsWithImages(prev =>
         prev.map(c => (c.nome === colorName ? { ...c, imagem: resizedImage } : c))
       );
+      showSuccess(`Imagem para ${colorName} carregada.`);
     } catch (error) {
       console.error(`Erro ao processar imagem para a cor ${colorName}:`, error);
-      alert(`Erro ao processar imagem para a cor ${colorName}`);
+      showError(`Erro ao processar imagem para a cor ${colorName}`);
     }
   };
 
@@ -285,12 +293,12 @@ useEffect(() => {
     if (!file) return;
 
     if (!validateFileType(file)) {
-      alert('Tipo de arquivo inválido. Use JPG, PNG ou WEBP.');
+      showError('Tipo de arquivo inválido. Use JPG, PNG ou WEBP.');
       return;
     }
 
     if (!validateFileSize(file)) {
-      alert('Arquivo muito grande. Tamanho máximo: 5MB');
+      showError('Arquivo muito grande. Tamanho máximo: 5MB');
       return;
     }
 
@@ -298,9 +306,10 @@ useEffect(() => {
     try {
       const resizedImage = await resizeImage(file);
       setNewCustomColorImagePreview(resizedImage);
+      showSuccess('Imagem da cor personalizada carregada.');
     } catch (error) {
       console.error('Erro ao processar imagem da nova cor personalizada:', error);
-      alert('Erro ao processar imagem da nova cor personalizada');
+      showError('Erro ao processar imagem da nova cor personalizada');
     } finally {
       setNewCustomColorUploadLoading(false);
     }
@@ -312,15 +321,15 @@ useEffect(() => {
 
   const handleAddCustomColor = () => {
     if (!newCustomColor.nome.trim()) {
-      alert('Nome da cor é obrigatório');
+      showError('Nome da cor é obrigatório');
       return;
     }
     if (!newCustomColor.hex || !/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/.test(newCustomColor.hex)) {
-      alert('Código hexadecimal da cor é obrigatório e deve ser válido.');
+      showError('Código hexadecimal da cor é obrigatório e deve ser válido.');
       return;
     }
     if (imagesRequiredForColors && !newCustomColorImagePreview) {
-      alert('É obrigatório fazer upload de uma imagem para a cor personalizada quando "Fotos obrigatórias para cor" está ativado.');
+      showError('É obrigatório fazer upload de uma imagem para a cor personalizada quando "Fotos obrigatórias para cor" está ativado.');
       return;
     }
 
@@ -336,6 +345,7 @@ useEffect(() => {
     setLastAddedCustomColorId(customColor.id);
     setNewCustomColor({ nome: '', hex: '#000000' });
     setNewCustomColorImagePreview('');
+    showSuccess(`Cor ${customColor.nome} adicionada!`);
   };
 
   const handleRemoveCustomColor = (idToRemove: string | undefined) => {
@@ -348,7 +358,7 @@ useEffect(() => {
     const allColors = [...standardColorsWithImages.map(c => c.nome), ...customColors.map(c => c.nome)];
 
     if (allColors.length === 0) {
-      alert('Selecione ou adicione pelo menos uma cor antes de gerar variações.');
+      showError('Selecione ou adicione pelo menos uma cor antes de gerar variações.');
       return;
     }
 
@@ -370,6 +380,7 @@ useEffect(() => {
     });
 
     setVariants(newVariants);
+    showSuccess('Variações geradas com sucesso! Configure o estoque.');
   };
 
   const updateVariantStock = (variantId: string, estoque: number) => {
@@ -378,62 +389,62 @@ useEffect(() => {
     ));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!formData.nome.trim()) {
-      alert('Nome é obrigatório');
+      showError('Nome é obrigatório');
       return;
     }
 
     if (formData.preco <= 0) {
-      alert('Preço deve ser maior que zero');
+      showError('Preço deve ser maior que zero');
       return;
     }
 
     if (formData.categoriaId === 0) { // 0 indica que nenhuma subcategoria foi selecionada ou que a principal não pode ser usada
-      alert('Selecione uma categoria ou subcategoria válida para o produto.');
+      showError('Selecione uma categoria ou subcategoria válida para o produto.');
       return;
     }
 
     const allSelectedColors = [...standardColorsWithImages, ...customColors];
     if (allSelectedColors.length === 0) {
-      alert('Selecione pelo menos uma cor para o produto.');
+      showError('Selecione pelo menos uma cor para o produto.');
       return;
     }
     
     if (imagesRequiredForColors) {
       const colorsWithoutImages = allSelectedColors.filter(c => !c.imagem);
       if (colorsWithoutImages.length > 0) {
-        alert(`Quando "Fotos obrigatórias para cor" está ativado, todas as cores selecionadas precisam de uma imagem. As seguintes cores estão sem imagem: ${colorsWithoutImages.map(c => c.nome).join(', ')}`);
+        showError(`Quando "Fotos obrigatórias para cor" está ativado, todas as cores selecionadas precisam de uma imagem. As seguintes cores estão sem imagem: ${colorsWithoutImages.map(c => c.nome).join(', ')}`);
         return;
       }
     }
 
     if (variants.length === 0) {
-      alert('Clique em "Gerar Variações" para criar as combinações de cor e tamanho e configurar o estoque.');
+      showError('Clique em "Gerar Variações" para criar as combinações de cor e tamanho e configurar o estoque.');
       return;
     }
 
     // Validação do desconto
     if (discountActive) {
       if (discountValue <= 0) {
-        alert('O valor do desconto deve ser maior que zero.');
+        showError('O valor do desconto deve ser maior que zero.');
         return;
       }
       if (discountType === 'percentage' && discountValue > 100) {
-        alert('A porcentagem de desconto não pode ser maior que 100%.');
+        showError('A porcentagem de desconto não pode ser maior que 100%.');
         return;
       }
       if (!discountExpiresAt) {
-        alert('A data de expiração do desconto é obrigatória quando o desconto está ativo.');
+        showError('A data de expiração do desconto é obrigatória quando o desconto está ativo.');
         return;
       }
       // Validação de data futura usando a string local
       // Usamos a função de conversão para criar um objeto Date local para comparação
       const expirationDate = new Date(formatLocalToIso(discountExpiresAt).replace(' ', 'T'));
       if (expirationDate < new Date()) {
-        alert('A data de expiração do desconto deve ser no futuro.');
+        showError('A data de expiração do desconto deve ser no futuro.');
         return;
       }
 
@@ -449,7 +460,7 @@ useEffect(() => {
       };
       const finalPrice = calculateDiscountedPrice(tempProduct);
       if (finalPrice < 0) {
-        alert('O desconto não pode resultar em um preço final negativo.');
+        showError('O desconto não pode resultar em um preço final negativo.');
         return;
       }
     }
@@ -458,7 +469,7 @@ useEffect(() => {
     if (isLaunch && launchExpiresAt) {
       const launchExpirationDate = new Date(formatLocalToIso(launchExpiresAt).replace(' ', 'T'));
       if (launchExpirationDate < new Date()) {
-        alert('A data de expiração do lançamento deve ser no futuro.');
+        showError('A data de expiração do lançamento deve ser no futuro.');
         return;
       }
     }
@@ -495,13 +506,28 @@ useEffect(() => {
       // ... other relevant fields
     });
 
+    let success = false;
     if (isEditing && id) {
-      productsService.update(parseInt(id), productData);
+      const result = await productsService.update(parseInt(id), productData);
+      if (result) {
+        showSuccess('Produto atualizado com sucesso!');
+        success = true;
+      } else {
+        showError('Erro ao atualizar produto.');
+      }
     } else {
-      productsService.create(productData);
+      const result = await productsService.create(productData);
+      if (result) {
+        showSuccess('Produto criado com sucesso!');
+        success = true;
+      } else {
+        showError('Erro ao criar produto.');
+      }
     }
 
-    navigate('/admin/produtos');
+    if (success) {
+      navigate('/admin/produtos');
+    }
   };
 
   return (
@@ -742,7 +768,6 @@ useEffect(() => {
                 );
               })}
             </div>
-
             <label className="flex items-center gap-2 mb-4 cursor-pointer">
               <input
                 type="checkbox"
@@ -827,7 +852,7 @@ useEffect(() => {
                       />
                       <button
                         type="button"
-                        onClick={() => handleRemoveNewCustomColorImage}
+                        onClick={handleRemoveNewCustomColorImage}
                         className="absolute -top-2 -right-2 bg-red-600 text-white p-1 hover:bg-red-700 transition-colors"
                         title="Remover imagem"
                       >
@@ -949,7 +974,7 @@ useEffect(() => {
                     </label>
                     <input
                       type="datetime-local"
-                      value={formatIsoToLocal(launchExpiresAt)}
+                      value={launchExpiresAt}
                       onChange={(e) => setLaunchExpiresAt(e.target.value)}
                       className="w-full border border-gray-300 px-4 py-2 focus:outline-none focus:border-black"
                     />
@@ -1035,7 +1060,7 @@ useEffect(() => {
                     </label>
                     <input
                       type="datetime-local"
-                      value={formatIsoToLocal(discountExpiresAt)}
+                      value={discountExpiresAt}
                       onChange={(e) => setDiscountExpiresAt(e.target.value)}
                       className="w-full border border-gray-300 px-4 py-2 focus:outline-none focus:border-black"
                       required
