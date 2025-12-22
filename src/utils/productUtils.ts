@@ -2,11 +2,11 @@ import { Product, DiscountType } from '../types';
 
 // Função auxiliar para criar um objeto Date interpretado no fuso horário local
 // Isso resolve o problema de 3 horas (UTC vs Local) ao analisar strings ISO sem fuso.
-function createLocalDate(isoString: string): Date {
-  if (!isoString) return new Date(0);
+function createLocalDate(dbString: string): Date {
+  if (!dbString) return new Date(0);
 
-  // Espera o formato: YYYY-MM-DDTHH:MM:SS
-  const parts = isoString.match(/(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})/);
+  // Match DB format: YYYY-MM-DD HH:MM:SS
+  const parts = dbString.match(/(\d{4})-(\d{2})-(\d{2})\s(\d{2}):(\d{2}):(\d{2})/);
   
   if (parts) {
     // Constrói o Date usando componentes locais (Ano, MêsIndex, Dia, Hora, Minuto, Segundo)
@@ -22,7 +22,7 @@ function createLocalDate(isoString: string): Date {
   }
   
   // Fallback para formatos inesperados
-  return new Date(isoString); 
+  return new Date(dbString); 
 }
 
 /**

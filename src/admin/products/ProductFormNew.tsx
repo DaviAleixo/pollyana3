@@ -11,22 +11,40 @@ import { calculateDiscountedPrice } from '../../utils/productUtils';
 import { NumericFormat } from 'react-number-format';
 import { showError, showSuccess } from '../../utils/toast'; // Import toast utilities
 
-// Função auxiliar para formatar a data ISO para o input datetime-local
-// Converte o formato de armazenamento (YYYY-MM-DD HH:MM:SS) para o formato do input (YYYY-MM-DDTHH:MM)
+// Função auxiliar para formatar a data ISO do DB (YYYY-MM-DD HH:MM:SS) para o input datetime-local (YYYY-MM-DDTHH:MM)
 const formatIsoToLocal = (isoString: string | undefined): string => {
   if (!isoString) return '';
-  // Remove 'Z' se existir (indica UTC) e substitui espaço por 'T'
-  // Também remove os segundos para o formato do input datetime-local
+  // Remove 'Z' se existir e substitui espaço por 'T', e remove os segundos
   const cleaned = isoString.replace('Z', '').replace(' ', 'T').slice(0, 16);
   return cleaned;
 };
 
-// Função auxiliar para converter a string local do input de volta para o formato de armazenamento
-// Armazenamos no formato YYYY-MM-DD HH:MM:SS (sem 'T' e sem 'Z') para ser tratado como data local pelo Supabase.
+// Função auxiliar para converter a string local do input (YYYY-MM-DDTHH:MM) de volta para o formato de armazenamento (YYYY-MM-DD HH:MM:SS)
 const formatLocalToIso = (localString: string): string => {
   if (!localString) return '';
   // Substitui 'T' por espaço e adiciona segundos para consistência
   return `${localString.replace('T', ' ')}:00`;
+};
+
+// NOVO: Função para parsear a string do input (YYYY-MM-DDTHH:MM) como horário local para validação
+const parseLocalInputString = (localString: string): Date => {
+  if (!localString) return new Date(0);
+  // Match input format: YYYY-MM-DDTHH:MM
+  const parts = localString.match(/(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/);
+  
+  if (parts) {
+    // Date constructor with components forces local interpretation
+    return new Date(
+      parseInt(parts[1]), // Year
+      parseInt(parts[2]) - 1, // Month (0-11)
+      parseInt(parts[3]), // Day
+      parseInt(parts[4]), // Hour
+      parseInt(parts[5]), // Minute
+      0 // Second
+    );
+  }
+  // Fallback (pode introduzir erro se o formato for inesperado)
+  return new Date(localString);
 };
 
 
@@ -440,9 +458,9 @@ export default function ProductFormNew() {
         showError('A data de expiração do desconto é obrigatória quando o desconto está ativo.');
         return;
       }
-      // Validação de data futura usando a string local
-      // Usamos a função de conversão para criar um objeto Date local para comparação
-      const expirationDate = new Date(formatLocalToIso(discountExpiresAt).replace(' ', 'T'));
+      
+      // ✅ CORREÇÃO: Usa parseLocalInputString para interpretar a data do input como local
+      const expirationDate = parseLocalInputString(discountExpiresAt);
       if (expirationDate < new Date()) {
         showError('A data de expiração do desconto deve ser no futuro.');
         return;
@@ -467,7 +485,8 @@ export default function ProductFormNew() {
 
     // Validação do lançamento
     if (isLaunch && launchExpiresAt) {
-      const launchExpirationDate = new Date(formatLocalToIso(launchExpiresAt).replace(' ', 'T'));
+      // ✅ CORREÇÃO: Usa parseLocalInputString para interpretar a data do input como local
+      const launchExpirationDate = parseLocalInputString(launchExpiresAt);
       if (launchExpirationDate < new Date()) {
         showError('A data de expiração do lançamento deve ser no futuro.');
         return;
