@@ -1,3 +1,4 @@
+import React from 'react';
 import toast, { ToastOptions } from 'react-hot-toast';
 
 const defaultOptions: ToastOptions = {

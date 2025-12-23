@@ -7,7 +7,7 @@ import { clicksService } from '../services/clicks.service'; // Importar clicksSe
 import { CartItem, ShippingAddress, ShippingOption } from '../types';
 import CountdownTimer from '../components/CountdownTimer';
 import CepInput from '../components/CepInput';
-import { showError, showSuccess, showConfirm } from '../utils/toast'; // Importar showConfirm
+import { showError, showSuccess, showConfirm } from '../utils/toast.tsx'; // Importar showConfirm
 
 export default function CartPage() {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
