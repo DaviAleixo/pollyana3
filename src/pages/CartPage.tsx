@@ -7,7 +7,7 @@ import { clicksService } from '../services/clicks.service'; // Importar clicksSe
 import { CartItem, ShippingAddress, ShippingOption } from '../types';
 import CountdownTimer from '../components/CountdownTimer';
 import CepInput from '../components/CepInput';
-import { showError, showSuccess } from '../utils/toast'; // Import toast utilities
+import { showError, showSuccess, showConfirm } from '../utils/toast'; // Importar showConfirm
 
 export default function CartPage() {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
@@ -71,11 +71,15 @@ export default function CartPage() {
     }
   };
 
-  const handleRemoveItem = (itemId: string) => {
-    if (window.confirm('Deseja remover este item do carrinho?')) {
-      cartService.removeItem(itemId);
-      showSuccess('Item removido do carrinho.');
-    }
+  const handleRemoveItem = (itemId: string, productName: string) => {
+    showConfirm(
+      `Deseja remover o item "${productName}" do carrinho?`,
+      () => {
+        cartService.removeItem(itemId);
+        showSuccess('Item removido do carrinho.');
+      },
+      'Remover'
+    );
   };
 
   const handleFinalizeOrder = async () => {
@@ -219,7 +223,7 @@ export default function CartPage() {
                         </button>
                       </div>
                       <button
-                        onClick={() => handleRemoveItem(item.id)}
+                        onClick={() => handleRemoveItem(item.id, item.productName)}
                         className="text-red-600 hover:text-red-800 p-1 transition-colors rounded-full" // Botão de remover arredondado
                         title="Remover item"
                       >
