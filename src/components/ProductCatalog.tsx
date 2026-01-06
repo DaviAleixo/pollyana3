@@ -145,7 +145,9 @@ export default function ProductCatalog({ allProducts, categories, selectedCatego
     // }
   };
 
-  const handleBannerClick = async (banner: Banner) => {
+  const handleBannerClick = async (banner: Banner, event: React.MouseEvent<HTMLDivElement>) => {
+    event.stopPropagation(); // Garante que o evento não se propague para elementos pai (embora não haja)
+    
     console.log(`[Banner Click] Banner ID: ${banner.id}, Link Type: ${banner.linkType}, External URL: ${banner.externalUrl}, Linked Category ID: ${banner.linkedCategoryId}`);
     
     switch (banner.linkType) {
@@ -210,7 +212,7 @@ export default function ProductCatalog({ allProducts, categories, selectedCatego
                 className={`absolute inset-0 transition-opacity duration-1000 ${
                   index === currentBannerIndex ? 'opacity-100' : 'opacity-0'
                 } ${banner.linkType !== 'informational' ? 'cursor-pointer' : ''}`}
-                onClick={() => handleBannerClick(banner)}
+                onClick={(e) => handleBannerClick(banner, e)} // Passando o evento de clique
               >
                 <img
                   src={banner.imageUrl}
