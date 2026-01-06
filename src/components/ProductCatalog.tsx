@@ -7,7 +7,7 @@ import { bannersService } from '../services/banners.service';
 import { Product, Category, Banner, SortOption } from '../types'; // Importar SortOption
 import ProductModal from './ProductModal';
 import { getDiscountDetails, isLaunchValid, calculateDiscountedPrice, isDiscountValid } from '../utils/productUtils'; // Importar calculateDiscountedPrice e isDiscountValid
-import CountdownTimer from './CountdownTimer';
+import CountdownTimer from '../components/CountdownTimer';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select'; // Importar componentes Select
 import NewArrivalsCarousel from './NewArrivalsCarousel'; // Importar o carrossel
 
@@ -146,32 +146,41 @@ export default function ProductCatalog({ allProducts, categories, selectedCatego
   };
 
   const handleBannerClick = async (banner: Banner) => {
-    console.log(`[Banner Click] Banner ID: ${banner.id}, Link Type: ${banner.linkType}, External URL: ${banner.externalUrl}`);
+    console.log(`[Banner Click] Banner ID: ${banner.id}, Link Type: ${banner.linkType}, External URL: ${banner.externalUrl}, Linked Category ID: ${banner.linkedCategoryId}`);
     
     switch (banner.linkType) {
       case 'product':
         if (banner.linkedProductId) {
+          console.log(`[Banner Action] Opening product modal for ID: ${banner.linkedProductId}`);
           const product = await productsService.getById(banner.linkedProductId);
           if (product) {
             handleOpenModal(product);
           }
+        } else {
+          console.log(`[Banner Action] Product link missing Product ID.`);
         }
         break;
       case 'category':
-        if (banner.linkedCategoryId) {
-          // 1. Altera a categoria selecionada no App.tsx
+        // Garante que o ID da categoria seja válido e não seja a categoria 'Todos' (ID 1)
+        if (banner.linkedCategoryId && banner.linkedCategoryId !== 1) { 
+          console.log(`[Banner Action] Navigating to category ID: ${banner.linkedCategoryId}`);
           onSelectCategory(banner.linkedCategoryId); 
-          // 2. Rola para o catálogo
           document.getElementById('catalog')?.scrollIntoView({ behavior: 'smooth' });
+        } else {
+          console.log(`[Banner Action] Category link ignored (ID 1 or missing ID).`);
         }
         break;
       case 'external':
         if (banner.externalUrl) {
+          console.log(`[Banner Action] Opening external URL: ${banner.externalUrl}`);
           window.open(banner.externalUrl, '_blank');
+        } else {
+          console.log(`[Banner Action] External link missing URL.`);
         }
         break;
       case 'informational':
       default:
+        console.log(`[Banner Action] Informational or unrecognized link type. No action taken.`);
         break;
     }
   };
