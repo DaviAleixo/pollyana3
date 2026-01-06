@@ -17,6 +17,10 @@ export default function CartPage() {
   const [shippingOptions, setShippingOptions] = useState<ShippingOption[]>([]);
   const [selectedShippingOption, setSelectedShippingOption] = useState<ShippingOption | null>(null);
   const [totalPrice, setTotalPrice] = useState(0);
+  
+  // NOVOS ESTADOS PARA NÚMERO E COMPLEMENTO
+  const [numero, setNumero] = useState('');
+  const [complemento, setComplemento] = useState('');
 
   const loadCart = useCallback(() => {
     const items = cartService.getCartItems();
@@ -39,15 +43,17 @@ export default function CartPage() {
     };
   }, [loadCart]);
 
+  // Efeito para recalcular opções de frete e resetar número/complemento se o endereço mudar
   useEffect(() => {
-    // Recalcular opções de frete sempre que o endereço mudar ou a página carregar
+    // Resetar número e complemento ao buscar novo CEP
+    setNumero('');
+    setComplemento('');
+
     const options = shippingService.calculateShippingOptions(shippingAddress);
     
-    // Usar Promise.resolve para lidar com a função assíncrona
     Promise.resolve(options).then(resolvedOptions => {
       setShippingOptions(resolvedOptions);
 
-      // Tentar manter a opção selecionada se ela ainda existir, caso contrário, selecionar a primeira
       if (selectedShippingOption && resolvedOptions.some(opt => opt.type === selectedShippingOption.type)) {
         setSelectedShippingOption(resolvedOptions.find(opt => opt.type === selectedShippingOption.type) || null);
       } else if (resolvedOptions.length > 0) {
@@ -93,22 +99,38 @@ export default function CartPage() {
       showError('Por favor, informe o CEP para entrega ou selecione Retirada na Loja.');
       return;
     }
+    
+    // Se for entrega e o número não foi preenchido
+    if (selectedShippingOption.type !== 'store_pickup' && shippingAddress && !numero.trim()) {
+        showError('Por favor, preencha o número do endereço para entrega.');
+        return;
+    }
 
     // 1. Registrar cliques para cada produto único no carrinho
     const uniqueProductIds = Array.from(new Set(cartItems.map(item => item.productId)));
     
-    // Registra um clique para cada produto no carrinho
     await Promise.all(uniqueProductIds.map(productId => clicksService.registerClick(productId)));
 
-    // 2. Gerar mensagem e redirecionar
-    const whatsappMessage = cartService.generateWhatsAppMessage(shippingAddress, selectedShippingOption);
-    const phoneNumber = '5531983921200'; // Usando o número do WhatsAppButton
+    // 2. Criar objeto ShippingAddress completo para a mensagem
+    const finalAddress: ShippingAddress | null = shippingAddress
+        ? {
+            ...shippingAddress,
+            numero: numero.trim(),
+            complemento: complemento.trim(),
+          }
+        : null;
+
+    // 3. Gerar mensagem e redirecionar
+    const whatsappMessage = cartService.generateWhatsAppMessage(finalAddress, selectedShippingOption);
+    const phoneNumber = '5531983921200';
     const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(whatsappMessage)}`;
 
     window.open(whatsappUrl, '_blank');
     cartService.clearCart();
     setShippingAddress(null);
     setSelectedShippingOption(null);
+    setNumero('');
+    setComplemento('');
     showSuccess('Pedido enviado para o WhatsApp! Carrinho limpo.');
   };
 
@@ -116,13 +138,14 @@ export default function CartPage() {
   const isCartEmpty = cartItems.length === 0;
   const isShippingSelected = !!selectedShippingOption;
   const isAddressRequired = isShippingSelected && selectedShippingOption.type !== 'store_pickup';
-  const isAddressValid = !isAddressRequired || !!shippingAddress;
+  const isAddressValid = !isAddressRequired || (!!shippingAddress && (selectedShippingOption?.type === 'store_pickup' || numero.trim() !== ''));
   const canFinalize = !isCartEmpty && isShippingSelected && isAddressValid;
 
   const getDisabledReason = () => {
     if (isCartEmpty) return 'Seu carrinho está vazio.';
     if (!isShippingSelected) return 'Selecione uma opção de frete.';
-    if (isAddressRequired && !isAddressValid) return 'Informe o CEP para entrega ou selecione Retirada na Loja.';
+    if (isAddressRequired && !shippingAddress) return 'Informe o CEP para entrega ou selecione Retirada na Loja.';
+    if (isAddressRequired && shippingAddress && !numero.trim()) return 'Preencha o número do endereço.';
     return '';
   };
 
@@ -143,11 +166,11 @@ export default function CartPage() {
         </div>
 
         {isCartEmpty ? (
-          <div className="bg-white border border-gray-200 p-8 text-center rounded-lg shadow-md"> {/* Card arredondado */}
+          <div className="bg-white border border-gray-200 p-8 text-center rounded-lg shadow-md">
             <p className="text-gray-600 text-xl mb-4">Seu carrinho está vazio.</p>
             <Link
               to="/"
-              className="inline-flex items-center gap-2 bg-black text-white px-6 py-3 hover:bg-gray-800 transition-colors font-medium rounded-md" // Botão arredondado
+              className="inline-flex items-center gap-2 bg-black text-white px-6 py-3 hover:bg-gray-800 transition-colors font-medium rounded-md"
             >
               <ShoppingBag className="w-5 h-5" strokeWidth={1.5} />
               Ver Produtos
@@ -156,7 +179,7 @@ export default function CartPage() {
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* Lista de Itens do Carrinho */}
-            <div className="lg:col-span-2 bg-white border border-gray-200 divide-y divide-gray-200 rounded-lg shadow-md"> {/* Card arredondado */}
+            <div className="lg:col-span-2 bg-white border border-gray-200 divide-y divide-gray-200 rounded-lg shadow-md">
               {cartItems.map((item) => {
                 const itemSavings = item.originalPriceAtAddToCart - item.discountedPriceAtAddToCart;
                 const isItemDiscounted = item.originalPriceAtAddToCart > item.discountedPriceAtAddToCart;
@@ -164,7 +187,7 @@ export default function CartPage() {
                 return (
                   <div key={item.id} className="flex flex-col sm:flex-row sm:items-center gap-4 p-4 sm:p-6">
                     {/* Imagem */}
-                    <div className="w-20 h-20 sm:w-24 sm:h-24 flex-shrink-0 bg-gray-100 overflow-hidden rounded-md"> {/* Imagem arredondada */}
+                    <div className="w-20 h-20 sm:w-24 sm:h-24 flex-shrink-0 bg-gray-100 overflow-hidden rounded-md">
                       <img
                         src={item.selectedColorImage || 'https://via.placeholder.com/100x100?text=Sem+Imagem'}
                         alt={item.productName}
@@ -203,7 +226,7 @@ export default function CartPage() {
 
                     {/* Controles de Quantidade e Remover */}
                     <div className="flex flex-col items-center sm:items-end gap-2 mt-4 sm:mt-0">
-                      <div className="flex items-center border border-gray-300 rounded-md"> {/* Controles de quantidade arredondados */}
+                      <div className="flex items-center border border-gray-300 rounded-md">
                         <button
                           onClick={() => handleUpdateQuantity(item.id, -1)}
                           className="p-2 hover:bg-gray-100 transition-colors rounded-l-md"
@@ -224,7 +247,7 @@ export default function CartPage() {
                       </div>
                       <button
                         onClick={() => handleRemoveItem(item.id, item.productName)}
-                        className="text-red-600 hover:text-red-800 p-1 transition-colors rounded-full" // Botão de remover arredondado
+                        className="text-red-600 hover:text-red-800 p-1 transition-colors rounded-full"
                         title="Remover item"
                       >
                         <Trash2 className="w-5 h-5" strokeWidth={1.5} />
@@ -236,7 +259,7 @@ export default function CartPage() {
             </div>
 
             {/* Resumo da Compra e Frete */}
-            <div className="bg-white border border-gray-200 p-6 h-fit lg:sticky lg:top-20 rounded-lg shadow-md"> {/* Card arredondado */}
+            <div className="bg-white border border-gray-200 p-6 h-fit lg:sticky lg:top-20 rounded-lg shadow-md">
               <h2 className="font-serif text-2xl font-bold text-black mb-4">
                 Resumo do Pedido
               </h2>
@@ -245,6 +268,37 @@ export default function CartPage() {
               <div className="mb-6 pb-6 border-b border-gray-200">
                 {/* CEP Input sempre visível */}
                 <CepInput onAddressChange={setShippingAddress} className="mb-4" />
+
+                {/* Campos de Número e Complemento (visíveis se o endereço for encontrado) */}
+                {shippingAddress && (
+                    <div className="grid grid-cols-3 gap-3 mb-4 animate-fade-in">
+                        <div className="col-span-1">
+                            <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                Número *
+                            </label>
+                            <input
+                                type="text"
+                                value={numero}
+                                onChange={(e) => setNumero(e.target.value)}
+                                className="w-full border border-gray-300 px-3 py-2 focus:outline-none focus:border-black rounded-md"
+                                placeholder="Nº"
+                                required
+                            />
+                        </div>
+                        <div className="col-span-2">
+                            <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                Complemento (opcional)
+                            </label>
+                            <input
+                                type="text"
+                                value={complemento}
+                                onChange={(e) => setComplemento(e.target.value)}
+                                className="w-full border border-gray-300 px-3 py-2 focus:outline-none focus:border-black rounded-md"
+                                placeholder="Apto, Bloco, Referência"
+                            />
+                        </div>
+                    </div>
+                )}
 
                 {shippingOptions.length > 0 && (
                   <div className="space-y-3">
@@ -310,7 +364,7 @@ export default function CartPage() {
               <button
                 onClick={handleFinalizeOrder}
                 disabled={!canFinalize}
-                className="w-full bg-green-600 text-white px-6 py-3 mt-6 hover:bg-green-700 transition-colors font-medium flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed rounded-md" // Botão arredondado
+                className="w-full bg-green-600 text-white px-6 py-3 mt-6 hover:bg-green-700 transition-colors font-medium flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed rounded-md"
                 title={!canFinalize ? getDisabledReason() : 'Finalizar pedido no WhatsApp'}
               >
                 <img src="/whatsapp-icon.svg" alt="WhatsApp" className="w-5 h-5" />

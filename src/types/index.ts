@@ -113,6 +113,8 @@ export interface ShippingAddress {
   bairro: string;
   localidade: string; // Cidade
   uf: string; // Estado
+  numero?: string; // NOVO: Número da casa/prédio
+  complemento?: string; // NOVO: Complemento
 }
 
 export interface ShippingOption {

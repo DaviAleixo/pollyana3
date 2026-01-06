@@ -4,7 +4,7 @@
 import { CartItem, Product, ProductColor, ProductVariant, DiscountType, ShippingAddress, ShippingOption } from '../types';
 import { storageService, STORAGE_KEYS } from './storage.service';
 import { calculateDiscountedPrice, isDiscountValid } from '../utils/productUtils'; // Importar utilitários de desconto
-import { showError } from '../utils/toast'; // Import toast utilities
+import { showError } from '../utils/toast.tsx'; // Import toast utilities
 
 const CART_STORAGE_KEY = 'pollyana_cart';
 
@@ -202,7 +202,14 @@ class CartService {
     } else if (shippingAddress) { // Só inclui endereço se não for retirada E o endereço estiver presente
       message += `*Endereço de Entrega:*\n`;
       message += `  CEP: ${shippingAddress.cep}\n`;
-      message += `  Endereço: ${shippingAddress.logradouro}, ${shippingAddress.bairro}, ${shippingAddress.localidade} - ${shippingAddress.uf}\n`;
+      message += `  Endereço: ${shippingAddress.logradouro}, Nº ${shippingAddress.numero || 'S/N'}`;
+      
+      if (shippingAddress.complemento) {
+        message += `, Comp: ${shippingAddress.complemento}`;
+      }
+      
+      message += ` - ${shippingAddress.bairro}\n`;
+      message += `  Cidade/UF: ${shippingAddress.localidade} - ${shippingAddress.uf}\n`;
       message += `  Tipo de Frete: ${shippingOption.label}\n`;
       message += `  Valor do Frete: R$ ${shippingOption.cost.toFixed(2)}\n\n`;
     }
