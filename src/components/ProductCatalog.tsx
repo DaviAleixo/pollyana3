@@ -146,6 +146,8 @@ export default function ProductCatalog({ allProducts, categories, selectedCatego
   };
 
   const handleBannerClick = async (banner: Banner) => {
+    console.log(`[Banner Click] Banner ID: ${banner.id}, Link Type: ${banner.linkType}, External URL: ${banner.externalUrl}`);
+    
     switch (banner.linkType) {
       case 'product':
         if (banner.linkedProductId) {
@@ -158,7 +160,6 @@ export default function ProductCatalog({ allProducts, categories, selectedCatego
       case 'category':
         if (banner.linkedCategoryId) {
           // 1. Altera a categoria selecionada no App.tsx
-          // A prop onSelectCategory é garantida pela interface ProductCatalogProps
           onSelectCategory(banner.linkedCategoryId); 
           // 2. Rola para o catálogo
           document.getElementById('catalog')?.scrollIntoView({ behavior: 'smooth' });
