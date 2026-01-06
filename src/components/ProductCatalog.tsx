@@ -15,6 +15,7 @@ interface ProductCatalogProps {
   allProducts: Product[]; // Receber todos os produtos do App.tsx
   categories: Category[]; // Receber categorias do App.tsx
   selectedCategory: number; // Receber selectedCategory como prop
+  onSelectCategory: (categoryId: number) => void; // NOVO: Handler para mudar a categoria
   searchTerm: string; // Receber o termo de busca como prop
   sortOption: SortOption; // Receber a opção de ordenação
   onSortChange: (option: SortOption) => void; // Receber o handler de ordenação
@@ -23,7 +24,7 @@ interface ProductCatalogProps {
 // ID fixo para a categoria virtual de Promoção
 const PROMOTION_CATEGORY_ID = 99999;
 
-export default function ProductCatalog({ allProducts, categories, selectedCategory, searchTerm, sortOption, onSortChange }: ProductCatalogProps) {
+export default function ProductCatalog({ allProducts, categories, selectedCategory, onSelectCategory, searchTerm, sortOption, onSortChange }: ProductCatalogProps) {
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
@@ -156,9 +157,9 @@ export default function ProductCatalog({ allProducts, categories, selectedCatego
         break;
       case 'category':
         if (banner.linkedCategoryId) {
-          // Se for link de categoria, atualiza a categoria selecionada no App.tsx
-          // Isso é feito indiretamente, pois o CategoryNavigation já lida com a seleção.
-          // Aqui, apenas garantimos o scroll.
+          // 1. Altera a categoria selecionada no App.tsx
+          onSelectCategory(banner.linkedCategoryId);
+          // 2. Rola para o catálogo
           document.getElementById('catalog')?.scrollIntoView({ behavior: 'smooth' });
         }
         break;
@@ -204,6 +205,9 @@ export default function ProductCatalog({ allProducts, categories, selectedCatego
                   src={banner.imageUrl}
                   alt={banner.textOverlay || `Banner ${banner.id}`}
                   className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                  onError={(e) => {
+                        (e.target as HTMLImageElement).src = 'https://via.placeholder.com/1920x400?text=Sem+Imagem';
+                  }}
                 />
                 <div className="absolute inset-0 bg-black/40 group-hover:bg-black/60 transition-colors duration-300 p-4 flex items-center justify-center">
                   {banner.textOverlay && (
@@ -220,17 +224,17 @@ export default function ProductCatalog({ allProducts, categories, selectedCatego
               <>
                 <button
                   onClick={(e) => { e.stopPropagation(); prevBanner(); }}
-                  className="absolute left-4 top-1/2 -translate-y-1/2 bg-transparent p-3 transition-all duration-300 rounded-full z-10"
+                  className="absolute left-4 top-1/2 -translate-y-1/2 z-10 bg-white/50 p-3 transition-all duration-300 rounded-full hover:bg-white/80"
                   aria-label="Banner anterior"
                 >
-                  <ChevronLeft className="w-6 h-6 text-transparent" />
+                  <ChevronLeft className="w-6 h-6 text-black" />
                 </button>
                 <button
                   onClick={(e) => { e.stopPropagation(); nextBanner(); }}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 bg-transparent p-3 transition-all duration-300 rounded-full z-10"
+                  className="absolute right-4 top-1/2 -translate-y-1/2 z-10 bg-white/50 p-3 transition-all duration-300 rounded-full hover:bg-white/80"
                   aria-label="Próximo banner"
                 >
-                <ChevronRight className="w-6 h-6 text-transparent" />
+                <ChevronRight className="w-6 h-6 text-black" />
                 </button>
               </>
             )}
