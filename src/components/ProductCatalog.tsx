@@ -158,7 +158,8 @@ export default function ProductCatalog({ allProducts, categories, selectedCatego
       case 'category':
         if (banner.linkedCategoryId) {
           // 1. Altera a categoria selecionada no App.tsx
-          onSelectCategory(banner.linkedCategoryId);
+          // A prop onSelectCategory é garantida pela interface ProductCatalogProps
+          onSelectCategory(banner.linkedCategoryId); 
           // 2. Rola para o catálogo
           document.getElementById('catalog')?.scrollIntoView({ behavior: 'smooth' });
         }
