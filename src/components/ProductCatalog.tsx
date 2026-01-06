@@ -148,18 +148,24 @@ export default function ProductCatalog({ allProducts, categories, selectedCatego
   const handleBannerClick = async (banner: Banner, event: React.MouseEvent<HTMLDivElement>) => {
     event.stopPropagation(); // Garante que o evento não se propague para elementos pai (embora não haja)
     
-    console.log(`[Banner Click] Banner ID: ${banner.id}, Link Type: ${banner.linkType}, External URL: ${banner.externalUrl}, Linked Category ID: ${banner.linkedCategoryId}`);
+    const sanitizedLinkType = (banner.linkType || '').trim();
     
-    switch (banner.linkType) {
+    console.log(`[Banner Click] Banner ID: ${banner.id}, Link Type READ (Sanitized): ${sanitizedLinkType}, External URL: ${banner.externalUrl}, Linked Category ID: ${banner.linkedCategoryId}`);
+    
+    let actionTaken = 'None';
+
+    switch (sanitizedLinkType) {
       case 'product':
         if (banner.linkedProductId) {
           console.log(`[Banner Action] Opening product modal for ID: ${banner.linkedProductId}`);
           const product = await productsService.getById(banner.linkedProductId);
           if (product) {
             handleOpenModal(product);
+            actionTaken = 'Product Modal Opened';
           }
         } else {
           console.log(`[Banner Action] Product link missing Product ID.`);
+          actionTaken = 'Product Link Missing ID';
         }
         break;
       case 'category':
@@ -168,23 +174,30 @@ export default function ProductCatalog({ allProducts, categories, selectedCatego
           console.log(`[Banner Action] Navigating to category ID: ${banner.linkedCategoryId}`);
           onSelectCategory(banner.linkedCategoryId); 
           document.getElementById('catalog')?.scrollIntoView({ behavior: 'smooth' });
+          actionTaken = 'Category Selected';
         } else {
           console.log(`[Banner Action] Category link ignored (ID 1 or missing ID).`);
+          actionTaken = 'Category Link Ignored';
         }
         break;
       case 'external':
         if (banner.externalUrl) {
           console.log(`[Banner Action] Opening external URL: ${banner.externalUrl}`);
           window.open(banner.externalUrl, '_blank');
+          actionTaken = 'External Link Opened';
         } else {
           console.log(`[Banner Action] External link missing URL.`);
+          actionTaken = 'External Link Missing URL';
         }
         break;
       case 'informational':
       default:
         console.log(`[Banner Action] Informational or unrecognized link type. No action taken.`);
+        actionTaken = 'Informational/Default';
         break;
     }
+    
+    console.log(`[Banner Click] Final Action: ${actionTaken}`);
   };
 
   const nextBanner = () => {

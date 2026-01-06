@@ -7,6 +7,7 @@ import { supabase } from '../lib/supabase';
 class BannersService {
   // Converte os dados do banco para o formato esperado pela aplicação
   private mapFromDB(dbBanner: any): Banner {
+    console.log(`[BannersService] Mapping Banner ID ${dbBanner.id}. Raw link_type: ${dbBanner.link_type}`);
     return {
       id: dbBanner.id,
       imageUrl: dbBanner.image_url,
