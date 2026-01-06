@@ -110,7 +110,7 @@ function App() {
                   allProducts={allProducts}
                   categories={categories}
                   selectedCategory={selectedCategory}
-                  onSelectCategory={handleSelectCategory} {/* PASSANDO O HANDLER */}
+                  onSelectCategory={handleSelectCategory}
                   searchTerm={searchTerm}
                   sortOption={sortOption} // PASS DOWN
                   onSortChange={setSortOption} // PASS DOWN
