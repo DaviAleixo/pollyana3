@@ -54,18 +54,24 @@ export default function CartPage() {
     Promise.resolve(options).then(resolvedOptions => {
       setShippingOptions(resolvedOptions);
 
-      // Lógica de seleção padrão:
-      // 1. Tenta manter a opção selecionada se ela ainda existir.
-      let newSelectedOption = selectedShippingOption && resolvedOptions.find(opt => opt.type === selectedShippingOption.type);
-      
-      // 2. Se não houver opção selecionada ou a anterior não existir, prioriza 'local'.
-      if (!newSelectedOption) {
+      let newSelectedOption: ShippingOption | null = null;
+
+      if (shippingAddress) {
+        // Se um endereço foi encontrado (após a busca do CEP), priorizamos a Entrega Local
         const localOption = resolvedOptions.find(opt => opt.type === 'local');
         if (localOption) {
           newSelectedOption = localOption;
         } else if (resolvedOptions.length > 0) {
-          // 3. Caso contrário, seleciona a primeira opção (que é sempre 'store_pickup')
+          // Se não houver Entrega Local (CEP fora da cidade da loja), seleciona a primeira (Retirada na Loja)
           newSelectedOption = resolvedOptions[0];
+        }
+      } else {
+        // Se não há endereço (CEP limpo ou inválido), tentamos manter a seleção anterior
+        newSelectedOption = selectedShippingOption && resolvedOptions.find(opt => opt.type === selectedShippingOption.type);
+        
+        // Se não houver seleção anterior válida, seleciona a primeira opção disponível (Retirada na Loja)
+        if (!newSelectedOption && resolvedOptions.length > 0) {
+            newSelectedOption = resolvedOptions[0];
         }
       }
       
