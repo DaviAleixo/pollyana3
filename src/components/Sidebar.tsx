@@ -15,9 +15,11 @@ interface SidebarProps {
 export default function Sidebar({ isOpen, onClose, categories, onSelectCategory, selectedCategoryId }: SidebarProps) {
   // Filtra a categoria "Todos" e outras categorias de nível superior visíveis
   const allCategory = categories.find(c => c.id === 1 && c.visivel);
+  
+  // Filtra e ordena as categorias de nível superior (exceto 'Todos')
   const otherTopLevelCategories = categories
     .filter(c => c.parentId === null && c.id !== 1 && c.visivel)
-    .sort((a, b) => a.order - b.order);
+    .sort((a, b) => a.order - b.order); // Aplica a ordenação
 
   return (
     <>
