@@ -11,6 +11,9 @@ interface NavbarProps {
   onFilterToggle: () => void; // NEW PROP
 }
 
+// Caminho da nova logo padrão
+const DEFAULT_LOGO_URL = '/attached_assets/logopollyanaremove.png';
+
 export default function Navbar({ onMenuToggle, searchTerm, onSearchTermChange, onFilterToggle }: NavbarProps) {
   const [totalItemsInCart, setTotalItemsInCart] = useState(0);
   const [isScrolled, setIsScrolled] = useState(false);
@@ -52,10 +55,11 @@ export default function Navbar({ onMenuToggle, searchTerm, onSearchTermChange, o
           </button>
 
           <Link to="/" className="flex-1 flex justify-center lg:flex-none lg:justify-start" data-testid="link-home">
-            {/* Usando texto como fallback para a logo */}
-            <h1 className="font-serif text-2xl font-bold text-black">
-              Pollyana Basic Chic
-            </h1>
+            <img
+              src={DEFAULT_LOGO_URL} // Usando a logo padrão diretamente
+              alt="Pollyana Basic Chic"
+              className="h-14 md:h-16 w-auto object-contain" // Reduzido para h-14 md:h-16
+            />
           </Link>
 
           <div className="hidden lg:flex flex-1 justify-center mx-8">
