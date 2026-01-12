@@ -121,12 +121,7 @@ export default function CartPage() {
         return;
     }
 
-    // 1. Registrar cliques para cada produto único no carrinho
-    const uniqueProductIds = Array.from(new Set(cartItems.map(item => item.productId)));
-    
-    await Promise.all(uniqueProductIds.map(productId => clicksService.registerClick(productId)));
-
-    // 2. Criar objeto ShippingAddress completo para a mensagem
+    // 1. Criar objeto ShippingAddress completo para a mensagem
     const finalAddress: ShippingAddress | null = shippingAddress
         ? {
             ...shippingAddress,
@@ -135,18 +130,22 @@ export default function CartPage() {
           }
         : null;
 
-    // 3. Gerar mensagem e redirecionar
+    // 2. Gerar mensagem e URL
     const whatsappMessage = cartService.generateWhatsAppMessage(finalAddress, selectedShippingOption);
     const phoneNumber = '5531983921200';
     const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(whatsappMessage)}`;
 
+    // 3. Abrir o WhatsApp IMEDIATAMENTE (deve ser síncrono com o clique)
     window.open(whatsappUrl, '_blank');
+    
+    // 4. Limpar carrinho e mostrar toast (pode ser síncrono ou assíncrono)
     cartService.clearCart();
-    setShippingAddress(null);
-    setSelectedShippingOption(null);
-    setNumero('');
-    setComplemento('');
     showSuccess('Pedido enviado para o WhatsApp! Carrinho limpo.');
+
+    // 5. Registrar cliques (operação de segundo plano, não bloqueia a navegação)
+    const uniqueProductIds = Array.from(new Set(cartItems.map(item => item.productId)));
+    // Usamos await aqui, mas ele não bloqueia a abertura da janela que já ocorreu.
+    await Promise.all(uniqueProductIds.map(productId => clicksService.registerClick(productId)));
   };
 
   // Lógica de habilitação do botão
