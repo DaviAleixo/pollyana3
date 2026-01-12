@@ -9,6 +9,9 @@ import { resizeImage, validateFileSize, validateFileType } from '../../utils/ima
 import SearchSelectInput from '../../components/SearchSelectInput';
 import { showError, showSuccess } from '../../utils/toast'; // Import toast utilities
 
+// ID fixo para a categoria virtual de Promoção
+const PROMOTION_CATEGORY_ID = 99999;
+
 export default function BannerForm() {
   const navigate = useNavigate();
   const { id } = useParams();
@@ -40,7 +43,9 @@ export default function BannerForm() {
       ]);
 
       setProducts(Array.isArray(productsResult) ? productsResult : []);
-      setCategories(Array.isArray(categoriesResult) ? categoriesResult : []);
+      
+      const fetchedCategories = Array.isArray(categoriesResult) ? categoriesResult : [];
+      setCategories(fetchedCategories);
 
       if (isEditing && bannerData) {
         setFormData(bannerData);
@@ -202,6 +207,16 @@ export default function BannerForm() {
       name: c.nome,
       description: c.parentId ? `Subcategoria de ${categories.find(p => p.id === c.parentId)?.nome || 'Pai Desconhecido'}` : 'Categoria Principal',
     }));
+    
+  // Adicionar a categoria virtual 'Promoção'
+  const promotionCategoryItem = {
+    id: PROMOTION_CATEGORY_ID,
+    name: 'Promoção',
+    description: 'Produtos com desconto ativo',
+  };
+  
+  const finalCategoryItems = [promotionCategoryItem, ...categoryItems];
+
 
   if (loadingData) {
     return (
@@ -322,7 +337,7 @@ export default function BannerForm() {
           {formData.linkType === 'category' && (
             <SearchSelectInput
               label="Selecionar Categoria *"
-              items={categoryItems}
+              items={finalCategoryItems} // Usar a lista que inclui 'Promoção'
               initialSelectedId={formData.linkedCategoryId}
               onSelect={handleSelectCategory}
               placeholder="Buscar categoria por nome..."

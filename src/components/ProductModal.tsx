@@ -5,6 +5,7 @@ import { STANDARD_COLORS, getColorHex } from '../utils/colorUtils';
 import { cartService } from '../services/cart.service';
 import { getDiscountDetails } from '../utils/productUtils';
 import CountdownTimer from './CountdownTimer';
+import { showError } from '../utils/toast'; // Importar showError
 
 interface ProductModalProps {
   product: Product;
@@ -117,6 +118,28 @@ export default function ProductModal({ product, isOpen, onClose, onAddToCart }: 
       cartService.addItem(product, selectedColor, selectedSize, quantity);
       onAddToCart();
       onClose();
+    }
+  };
+  
+  const handleIncreaseQuantity = () => {
+    if (quantity < currentStock) {
+      setQuantity(prev => prev + 1);
+    } else {
+      showError(`Temos apenas ${currentStock} peça(s) em estoque para esta variação.`);
+    }
+  };
+
+  const handleDecreaseQuantity = () => {
+    setQuantity(prev => Math.max(1, prev - 1));
+  };
+
+  const handleQuantityInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = parseInt(e.target.value) || 1;
+    if (value > currentStock) {
+      showError(`Temos apenas ${currentStock} peça(s) em estoque para esta variação.`);
+      setQuantity(currentStock);
+    } else {
+      setQuantity(Math.max(1, value));
     }
   };
 
@@ -252,12 +275,12 @@ export default function ProductModal({ product, isOpen, onClose, onAddToCart }: 
               </div>
             )}
 
-            {/* Exibição de Estoque e Status */}
-            {selectedColor && selectedSize ? (
+            {/* Status de Disponibilidade (Simplificado) */}
+            {selectedColor && selectedSize && (
               currentStock > 0 ? (
                 <div className="mb-6 p-3 bg-green-50 border border-green-200 rounded-md">
                   <p className="text-sm text-green-700 font-semibold">
-                    Disponível: <span className="font-bold">{currentStock}</span> unidade(s) em estoque.
+                    Produto disponível.
                   </p>
                 </div>
               ) : (
@@ -267,7 +290,10 @@ export default function ProductModal({ product, isOpen, onClose, onAddToCart }: 
                   </p>
                 </div>
               )
-            ) : (
+            )}
+            
+            {/* Mensagem para selecionar cor/tamanho */}
+            {(!selectedColor || !selectedSize) && (
               <div className="mb-6 p-3 bg-gray-50 border border-gray-200 rounded-md">
                 <p className="text-sm text-gray-600">
                   Selecione cor e tamanho para verificar a disponibilidade.
@@ -283,7 +309,7 @@ export default function ProductModal({ product, isOpen, onClose, onAddToCart }: 
                 <div className="flex items-center border border-gray-300 rounded-md"> {/* Controles de quantidade arredondados */}
                   <button
                     type="button"
-                    onClick={() => setQuantity(prev => Math.max(1, prev - 1))}
+                    onClick={handleDecreaseQuantity}
                     className="p-2 hover:bg-gray-100 transition-colors rounded-l-md"
                     disabled={quantity <= 1}
                   >
@@ -292,14 +318,13 @@ export default function ProductModal({ product, isOpen, onClose, onAddToCart }: 
                   <input
                     type="number"
                     min="1"
-                    max={currentStock} // Limitar pelo estoque
                     value={quantity}
-                    onChange={(e) => setQuantity(Math.max(1, Math.min(currentStock, parseInt(e.target.value) || 1)))}
+                    onChange={handleQuantityInputChange}
                     className="w-16 text-center border-x border-gray-300 py-2 focus:outline-none"
                   />
                   <button
                     type="button"
-                    onClick={() => setQuantity(prev => Math.min(currentStock, prev + 1))}
+                    onClick={handleIncreaseQuantity}
                     className="p-2 hover:bg-gray-100 transition-colors rounded-r-md"
                     disabled={quantity >= currentStock}
                   >
