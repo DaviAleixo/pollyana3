@@ -17,9 +17,10 @@ export default function CategoriesList() {
     loadData();
   }, [loadData]);
 
-  const handleMoveCategory = (id: number, newOrder: number, newParentId: number | null) => {
-    categoriesService.reorder(id, newOrder, newParentId);
-    loadData(); // Recarrega os dados para refletir a nova ordem
+  // CORRIGIDO: Tornar assíncrono e usar await
+  const handleMoveCategory = async (id: number, newOrder: number, newParentId: number | null) => {
+    await categoriesService.reorder(id, newOrder, newParentId);
+    await loadData(); // Recarrega os dados APÓS a atualização no banco
   };
 
   const filteredTopLevelCategories = allCategories
