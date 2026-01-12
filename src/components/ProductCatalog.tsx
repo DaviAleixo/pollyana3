@@ -219,31 +219,34 @@ export default function ProductCatalog({ allProducts, categories, selectedCatego
         {/* Carrossel de Banners */}
         {visibleBanners.length > 0 && (
           <div className="relative mb-24 group overflow-hidden bg-gray-100 flex flex-col justify-end min-h-[250px] md:min-h-[400px]"> {/* Aumentado mb-16 para mb-24 */}
-            {visibleBanners.map((banner, index) => (
-              <div
-                key={banner.id}
-                className={`absolute inset-0 transition-opacity duration-1000 ${
-                  index === currentBannerIndex ? 'opacity-100' : 'opacity-0'
-                } ${banner.linkType !== 'informational' ? 'cursor-pointer' : ''}`}
-                onClick={(e) => handleBannerClick(banner, e)} // Passando o evento de clique
-              >
-                <img
-                  src={banner.imageUrl}
-                  alt={banner.textOverlay || `Banner ${banner.id}`}
-                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                  onError={(e) => {
-                        (e.target as HTMLImageElement).src = 'https://via.placeholder.com/1920x400?text=Sem+Imagem';
-                  }}
-                />
-                <div className="absolute inset-0 bg-black/40 group-hover:bg-black/60 transition-colors duration-300 p-4 flex items-center justify-center">
-                  {banner.textOverlay && (
-                    <p className="font-serif text-white text-3xl md:text-5xl font-bold text-center px-4 drop-shadow-lg">
-                      {banner.textOverlay}
-                    </p>
-                  )}
+            {visibleBanners.map((banner, index) => {
+              const isCurrent = index === currentBannerIndex;
+              return (
+                <div
+                  key={banner.id}
+                  className={`absolute inset-0 transition-opacity duration-1000 ${
+                    isCurrent ? 'opacity-100' : 'opacity-0 pointer-events-none' // Adicionado pointer-events-none
+                  } ${banner.linkType !== 'informational' ? 'cursor-pointer' : ''}`}
+                  onClick={(e) => handleBannerClick(banner, e)} // Passando o evento de clique
+                >
+                  <img
+                    src={banner.imageUrl}
+                    alt={banner.textOverlay || `Banner ${banner.id}`}
+                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                    onError={(e) => {
+                          (e.target as HTMLImageElement).src = 'https://via.placeholder.com/1920x400?text=Sem+Imagem';
+                    }}
+                  />
+                  <div className="absolute inset-0 bg-black/40 group-hover:bg-black/60 transition-colors duration-300 p-4 flex items-center justify-center">
+                    {banner.textOverlay && (
+                      <p className="font-serif text-white text-3xl md:text-5xl font-bold text-center px-4 drop-shadow-lg">
+                        {banner.textOverlay}
+                      </p>
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
 
             {/* Setas de navegação do carrossel */}
             {visibleBanners.length > 1 && (
