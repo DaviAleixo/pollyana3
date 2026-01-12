@@ -136,7 +136,7 @@ export default function StockControlNew() {
         // Persistir a alteração no produto (variantes e estoque total)
         await productsService.update(productId, {
           variants: updatedVariants,
-          estoque: newTotalTotalStock,
+          estoque: newTotalStock, // CORRIGIDO: Usando newTotalStock
         });
       }
 
