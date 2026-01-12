@@ -2,10 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ShoppingBag, Menu, Filter } from 'lucide-react';
 import { cartService } from '../services/cart.service';
-import { configService } from '../services/config.service'; // Importar configService
 import SearchBar from './SearchBar';
-import defaultLogoImage from '/attached_assets/WhatsApp_Image_2025-11-25_at_15.53.40-removebg-preview_1765314447113.png';
-import { storageService, STORAGE_KEYS } from '../services/storage.service'; // Importar storageService
 
 interface NavbarProps {
   onMenuToggle: () => void;
@@ -14,10 +11,12 @@ interface NavbarProps {
   onFilterToggle: () => void; // NEW PROP
 }
 
+// Caminho da nova logo padrão
+const DEFAULT_LOGO_URL = '/attached_assets/logopollyanaremove.png';
+
 export default function Navbar({ onMenuToggle, searchTerm, onSearchTermChange, onFilterToggle }: NavbarProps) {
   const [totalItemsInCart, setTotalItemsInCart] = useState(0);
   const [isScrolled, setIsScrolled] = useState(false);
-  const [logoUrl, setLogoUrl] = useState(defaultLogoImage); // Novo estado para a URL da logo
 
   useEffect(() => {
     const updateCartCount = () => {
@@ -28,21 +27,13 @@ export default function Navbar({ onMenuToggle, searchTerm, onSearchTermChange, o
       setIsScrolled(window.scrollY > 10);
     };
     
-    const loadLogo = async () => {
-      const appConfig = await configService.getConfig();
-      setLogoUrl(appConfig.logoUrl || defaultLogoImage);
-    };
-
-    loadLogo();
     updateCartCount();
     window.addEventListener('scroll', handleScroll);
     window.addEventListener('storage', updateCartCount);
-    window.addEventListener('storage', loadLogo); // Adicionar listener para a logo
 
     return () => {
       window.removeEventListener('scroll', handleScroll);
       window.removeEventListener('storage', updateCartCount);
-      window.removeEventListener('storage', loadLogo);
     };
   }, []);
 
@@ -65,7 +56,7 @@ export default function Navbar({ onMenuToggle, searchTerm, onSearchTermChange, o
 
           <Link to="/" className="flex-1 flex justify-center lg:flex-none lg:justify-start" data-testid="link-home">
             <img
-              src={logoUrl} // Usar o estado da URL
+              src={DEFAULT_LOGO_URL} // Usando a logo padrão diretamente
               alt="Pollyana Basic Chic"
               className="h-14 md:h-16 w-auto object-contain" // Reduzido para h-14 md:h-16
             />

@@ -1,13 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { authService } from '../services/auth.service';
 import { shippingService } from '../services/shipping.service';
-import { configService } from '../services/config.service'; // Importar configService
-import { Upload, X } from 'lucide-react';
 import CitySelectInput from '../components/CitySelectInput';
 import { NumericFormat } from 'react-number-format';
-import { storageService, STORAGE_KEYS } from '../services/storage.service';
-import { resizeImage, validateFileSize, validateFileType } from '../utils/imageUtils';
-import defaultLogoImage from '/attached_assets/WhatsApp_Image_2025-11-25_at_15.53.40-removebg-preview_1765314447113.png';
 import { showError, showSuccess } from '../utils/toast'; // Import toast utilities
 
 export default function Settings() {
@@ -15,20 +10,12 @@ export default function Settings() {
   const [newUsername, setNewUsername] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmNewPassword, setConfirmNewPassword] = useState('');
-  // Removido: const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   // Estados para as configurações de frete
   const [storeCity, setStoreCity] = useState('');
   const [localDeliveryCost, setLocalDeliveryCost] = useState(0);
   const [standardShippingCost, setStandardShippingCost] = useState(0);
   const [storePickupCost, setStorePickupCost] = useState(0);
-  // Removido: const [shippingMessage, setShippingMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
-
-  // Estados para a Logo
-  const [logoUrl, setLogoUrl] = useState(defaultLogoImage);
-  const [logoUploadLoading, setLogoUploadLoading] = useState(false);
-  // Removido: const [logoMessage, setLogoMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
-
 
   useEffect(() => {
     setCurrentUsername(authService.getUsername());
@@ -40,10 +27,6 @@ export default function Settings() {
         setLocalDeliveryCost(shippingConfig.localDeliveryCost);
         setStandardShippingCost(shippingConfig.standardShippingCost);
         setStorePickupCost(shippingConfig.storePickupCost);
-        
-        // Carregar logo do configService
-        const appConfig = await configService.getConfig();
-        setLogoUrl(appConfig.logoUrl || defaultLogoImage);
     };
     
     loadConfig();
@@ -120,59 +103,6 @@ export default function Settings() {
         showError('Erro ao salvar configurações de frete. Verifique o console.');
     }
   };
-  
-  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    if (!validateFileType(file)) {
-      showError('Tipo de arquivo inválido. Use JPG, PNG ou WEBP.');
-      return;
-    }
-
-    if (!validateFileSize(file, 2)) { // Limite de 2MB para logo
-      showError('Arquivo muito grande. Tamanho máximo: 2MB');
-      return;
-    }
-
-    setLogoUploadLoading(true);
-    try {
-      // Redimensionar para um tamanho razoável para logo (ex: 400x400)
-      const resizedImage = await resizeImage(file, {
-        maxWidth: 400,
-        maxHeight: 400,
-        quality: 0.9,
-      });
-      
-      // Salvar no Supabase via configService (isso também atualiza o localStorage e dispara 'storage')
-      await configService.updateConfig({ logoUrl: resizedImage });
-      
-      setLogoUrl(resizedImage);
-      showSuccess('Logo atualizada com sucesso!');
-      // Não é necessário disparar o evento 'storage' manualmente aqui
-    } catch (error) {
-      console.error('Erro ao processar imagem da logo:', error);
-      showError('Erro ao processar imagem da logo.');
-    } finally {
-      setLogoUploadLoading(false);
-    }
-  };
-
-  const handleRemoveLogo = async () => {
-    if (window.confirm('Deseja remover a logo personalizada e voltar para a logo padrão?')) {
-      try {
-        // Salvar a URL padrão no Supabase (isso também atualiza o localStorage e dispara 'storage')
-        await configService.updateConfig({ logoUrl: defaultLogoImage });
-        
-        setLogoUrl(defaultLogoImage);
-        showSuccess('Logo removida. Usando logo padrão.');
-        // Não é necessário disparar o evento 'storage' manualmente aqui
-      } catch (error) {
-        console.error('Erro ao remover logo:', error);
-        showError('Erro ao remover logo.');
-      }
-    }
-  };
 
   return (
     <div>
@@ -183,47 +113,6 @@ export default function Settings() {
         </p>
       </div>
       
-      {/* Seção de Logo da Loja */}
-      <div className="bg-white border border-gray-200 p-6 mb-8">
-        <h2 className="text-xl font-bold text-black mb-4">Logo da Loja</h2>
-        <div className="space-y-4">
-            <div className="flex items-center gap-4">
-                <img
-                    src={logoUrl}
-                    alt="Logo Atual"
-                    className="h-20 w-auto object-contain border border-gray-200 p-2"
-                />
-                <div className="flex flex-col gap-2">
-                    <label className="flex items-center gap-2 bg-black text-white px-4 py-2 cursor-pointer hover:bg-gray-800 transition-colors w-fit">
-                        <Upload className="w-4 h-4" />
-                        {logoUploadLoading ? 'Processando...' : 'Fazer Upload da Logo'}
-                        <input
-                            type="file"
-                            accept="image/jpeg,image/jpg,image/png,image/webp"
-                            onChange={handleLogoUpload}
-                            className="hidden"
-                            disabled={logoUploadLoading}
-                        />
-                    </label>
-                    {logoUrl !== defaultLogoImage && (
-                        <button
-                            type="button"
-                            onClick={handleRemoveLogo}
-                            className="flex items-center gap-2 text-red-600 hover:text-red-800 text-sm w-fit"
-                        >
-                            <X className="w-4 h-4" />
-                            Remover Logo Personalizada
-                        </button>
-                    )}
-                </div>
-            </div>
-            <p className="text-xs text-gray-500">
-                Recomendado: Imagem quadrada ou retangular com fundo transparente (PNG). Máx 2MB.
-            </p>
-        </div>
-        {/* Removido: logoMessage display logic */}
-      </div>
-
       {/* Seção de Credenciais */}
       <form onSubmit={handleSubmitAuth} className="bg-white border border-gray-200 p-6 mb-8">
         <h2 className="text-xl font-bold text-black mb-4">Credenciais de Acesso</h2>
@@ -283,8 +172,6 @@ export default function Settings() {
             />
           </div>
         </div>
-
-        {/* Removido: message display logic */}
 
         <div className="flex gap-4 mt-6 pt-6 border-t border-gray-200">
           <button
@@ -356,8 +243,6 @@ export default function Settings() {
             />
           </div>
         </div>
-
-        {/* Removido: shippingMessage display logic */}
 
         <div className="flex gap-4 mt-6 pt-6 border-t border-gray-200">
           <button

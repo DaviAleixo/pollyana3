@@ -145,8 +145,3 @@ export interface Banner {
   // desktopImageUrl?: string; // Para futuras melhorias de imagens responsivas específicas
   // mobileImageUrl?: string; // Para futuras melhorias de imagens responsivas específicas
 }
-
-// Nova interface para configurações globais
-export interface AppConfig {
-  logoUrl: string;
-}
