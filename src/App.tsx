@@ -42,7 +42,12 @@ function App() {
     await initializeData();
     authService.initialize();
     const fetchedCategories = await categoriesService.getAll();
-    setCategories(fetchedCategories.filter(c => c.visivel));
+    // Filtra categorias visíveis e garante que a lista está ordenada pelo 'order'
+    const visibleCategories = fetchedCategories
+      .filter(c => c.visivel)
+      .sort((a, b) => a.order - b.order); // Ordenação aqui também, embora o Sidebar faça isso, é bom ter a lista base ordenada.
+      
+    setCategories(visibleCategories);
     const fetchedProducts = await productsService.getVisible();
     setAllProducts(fetchedProducts);
   }, []);
