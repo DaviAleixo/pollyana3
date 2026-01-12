@@ -54,13 +54,22 @@ export default function CartPage() {
     Promise.resolve(options).then(resolvedOptions => {
       setShippingOptions(resolvedOptions);
 
-      if (selectedShippingOption && resolvedOptions.some(opt => opt.type === selectedShippingOption.type)) {
-        setSelectedShippingOption(resolvedOptions.find(opt => opt.type === selectedShippingOption.type) || null);
-      } else if (resolvedOptions.length > 0) {
-        setSelectedShippingOption(resolvedOptions[0]);
-      } else {
-        setSelectedShippingOption(null);
+      // Lógica de seleção padrão:
+      // 1. Tenta manter a opção selecionada se ela ainda existir.
+      let newSelectedOption = selectedShippingOption && resolvedOptions.find(opt => opt.type === selectedShippingOption.type);
+      
+      // 2. Se não houver opção selecionada ou a anterior não existir, prioriza 'local'.
+      if (!newSelectedOption) {
+        const localOption = resolvedOptions.find(opt => opt.type === 'local');
+        if (localOption) {
+          newSelectedOption = localOption;
+        } else if (resolvedOptions.length > 0) {
+          // 3. Caso contrário, seleciona a primeira opção (que é sempre 'store_pickup')
+          newSelectedOption = resolvedOptions[0];
+        }
       }
+      
+      setSelectedShippingOption(newSelectedOption || null);
     });
   }, [shippingAddress]); // Depende apenas do shippingAddress
 
