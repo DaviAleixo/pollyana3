@@ -86,17 +86,10 @@ export default function StockControlNew() {
     return change ? change.newStock : initialStock;
   };
 
-  const updateVariantStock = (productId: number, variantId: string, delta: number) => {
-    const product = products.find(p => p.id === productId);
-    if (!product || !product.variants) return;
+  // Função para atualizar o estoque com um valor absoluto (usado pelo input)
+  const setVariantStockAbsolute = (productId: number, variantId: string, absoluteStock: number) => {
+    const newStock = Math.max(0, absoluteStock);
 
-    const variant = product.variants.find(v => v.id === variantId);
-    if (!variant) return;
-
-    const currentStock = getVariantStock(productId, variantId, variant.estoque);
-    const newStock = Math.max(0, currentStock + delta);
-
-    // Atualiza o estado local de alterações
     setStockChanges(prev => {
       const existingIndex = prev.findIndex(c => c.productId === productId && c.variantId === variantId);
       
@@ -108,6 +101,20 @@ export default function StockControlNew() {
         return [...prev, { productId, variantId, newStock }];
       }
     });
+  };
+
+  // Função para atualizar o estoque com um delta (usado pelos botões +/-)
+  const updateVariantStockDelta = (productId: number, variantId: string, delta: number) => {
+    const product = products.find(p => p.id === productId);
+    if (!product || !product.variants) return;
+
+    const variant = product.variants.find(v => v.id === variantId);
+    if (!variant) return;
+
+    const currentStock = getVariantStock(productId, variantId, variant.estoque);
+    const newStock = Math.max(0, currentStock + delta);
+
+    setVariantStockAbsolute(productId, variantId, newStock);
   };
 
   const handleSaveStock = async () => {
@@ -303,19 +310,27 @@ export default function StockControlNew() {
                                     <tr key={variant.id}>
                                       <td className="px-4 py-2 text-sm">{variant.cor}</td>
                                       <td className="px-4 py-2 text-sm">{variant.tamanho}</td>
-                                      <td className="px-4 py-2 text-center text-sm">{currentStock}</td>
+                                      <td className="px-4 py-2 text-center text-sm">
+                                        <input
+                                          type="number"
+                                          min="0"
+                                          value={currentStock}
+                                          onChange={(e) => setVariantStockAbsolute(product.id, variant.id, parseInt(e.target.value) || 0)}
+                                          className="w-16 border border-gray-300 px-2 py-1 text-center focus:outline-none focus:border-black"
+                                        />
+                                      </td>
                                       <td className="px-4 py-2">
                                         <div className="flex justify-center gap-2">
                                           <button
                                             type="button"
-                                            onClick={() => updateVariantStock(product.id, variant.id, 1)}
+                                            onClick={() => updateVariantStockDelta(product.id, variant.id, 1)}
                                             className="bg-green-600 text-white p-1.5 hover:bg-green-700 transition-colors"
                                           >
                                             <Plus className="w-3 h-3" />
                                           </button>
                                           <button
                                             type="button"
-                                            onClick={() => updateVariantStock(product.id, variant.id, -1)}
+                                            onClick={() => updateVariantStockDelta(product.id, variant.id, -1)}
                                             className="bg-red-600 text-white p-1.5 hover:bg-red-700 transition-colors"
                                             disabled={currentStock === 0}
                                           >
