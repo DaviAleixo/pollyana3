@@ -7,6 +7,7 @@ import { clicksService } from '../services/clicks.service';
 import { stockService } from '../services/stock.service';
 import { shippingService } from '../services/shipping.service';
 import { bannersService } from '../services/banners.service';
+import { configService } from '../services/config.service'; // Importar novo serviço
 
 // ===================================================================
 // PROJETO ZERADO PARA O CLIENTE - SEM DADOS DE TESTE
@@ -21,6 +22,7 @@ export async function initializeData(): Promise<void> {
   await stockService.initialize();
   await shippingService.initialize();
   await bannersService.initialize();
+  await configService.initialize(); // Inicializa o serviço de configuração
 
   // NÃO insere produtos, categorias ou banners de teste
   // O banco fica zerado para o cliente começar do zero
@@ -92,6 +94,7 @@ export async function initializeDataWithMocks(): Promise<void> {
   await clicksService.initialize();
   await stockService.initialize();
   await shippingService.initialize();
+  await configService.initialize(); // Inicializa o serviço de configuração
 
   await bannersService.initialize();
   const existingBanners = await bannersService.getAll(false);

@@ -30,7 +30,7 @@ export default function ProductCatalog({ allProducts, categories, selectedCatego
   const [modalOpen, setModalOpen] = useState(false);
   const [visibleBanners, setVisibleBanners] = useState<Banner[]>([]);
   const [currentBannerIndex, setCurrentBannerIndex] = useState(0);
-  // Removido: const [hoveredProductId, setHoveredProductId] = useState<number | null>(null); 
+  const [hoveredProductId, setHoveredProductId] = useState<number | null>(null); // Reintroduzido para o hover da descrição
 
   // Carregar banners visíveis e configurar listener para mudanças no storage
   useEffect(() => {
@@ -313,6 +313,8 @@ export default function ProductCatalog({ allProducts, categories, selectedCatego
                 <div
                   key={product.id}
                   className="group bg-white border border-gray-200 overflow-hidden hover:shadow-xl transition-shadow duration-300 flex flex-col rounded-lg"
+                  onMouseEnter={() => setHoveredProductId(product.id)}
+                  onMouseLeave={() => setHoveredProductId(null)}
                 >
                   {/* Imagem do produto - proporção fixa e padronizada */}
                   <div className="relative w-full aspect-square overflow-hidden bg-gray-100 flex-shrink-0 flex items-center justify-center"> {/* Adicionado flex items-center justify-center */}
@@ -346,10 +348,19 @@ export default function ProductCatalog({ allProducts, categories, selectedCatego
                       {product.nome}
                     </h3>
 
-                    {/* Descrição truncada (2 linhas) */}
-                    <p className="text-gray-600 text-xs sm:text-sm mb-3 h-8 sm:h-10 line-clamp-2 whitespace-pre-wrap"> {/* Aumentado h-4/h-5 para h-8/h-10 e line-clamp-1 para line-clamp-2 */}
-                      {product.descricao}
-                    </p>
+                    {/* Descrição truncada (2 linhas) com hover para mostrar completa */}
+                    <div className="relative mb-3 sm:mb-4">
+                      <p className="text-gray-600 text-xs sm:text-sm h-8 sm:h-10 line-clamp-2 whitespace-pre-wrap">
+                        {product.descricao}
+                      </p>
+                      {/* Tooltip para descrição completa (apenas em desktop) */}
+                      {hoveredProductId === product.id && product.descricao && (
+                        <div className="hidden lg:block absolute z-50 top-full left-0 right-0 mt-2 p-3 bg-gray-900 text-white text-xs rounded shadow-lg w-64 pointer-events-none">
+                          <p className="leading-relaxed whitespace-pre-wrap">{product.descricao}</p>
+                          <div className="absolute bottom-full left-4 w-0 h-0 border-l-4 border-r-4 border-b-4 border-transparent border-b-gray-900"></div>
+                        </div>
+                      )}
+                    </div>
 
                     {/* Preço */}
                     <div className="mb-3 sm:mb-4">

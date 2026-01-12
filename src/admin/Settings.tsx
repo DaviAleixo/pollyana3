@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { authService } from '../services/auth.service';
 import { shippingService } from '../services/shipping.service';
+import { configService } from '../services/config.service'; // Importar configService
 import { Upload, X } from 'lucide-react';
 import CitySelectInput from '../components/CitySelectInput';
 import { NumericFormat } from 'react-number-format';
@@ -34,21 +35,18 @@ export default function Settings() {
     
     // Carregar configurações de frete
     const loadConfig = async () => {
-        const config = await shippingService.getConfig();
-        setStoreCity(config.storeCity);
-        setLocalDeliveryCost(config.localDeliveryCost);
-        setStandardShippingCost(config.standardShippingCost);
-        setStorePickupCost(config.storePickupCost);
+        const shippingConfig = await shippingService.getConfig();
+        setStoreCity(shippingConfig.storeCity);
+        setLocalDeliveryCost(shippingConfig.localDeliveryCost);
+        setStandardShippingCost(shippingConfig.standardShippingCost);
+        setStorePickupCost(shippingConfig.storePickupCost);
+        
+        // Carregar logo do configService
+        const appConfig = await configService.getConfig();
+        setLogoUrl(appConfig.logoUrl || defaultLogoImage);
     };
     
-    // Carregar logo
-    const loadLogo = () => {
-        const customLogo = storageService.get<string>(STORAGE_KEYS.CUSTOM_LOGO_URL);
-        setLogoUrl(customLogo || defaultLogoImage);
-    };
-
     loadConfig();
-    loadLogo();
   }, []);
 
   const handleSubmitAuth = (e: React.FormEvent) => {
@@ -146,7 +144,9 @@ export default function Settings() {
         quality: 0.9,
       });
       
-      storageService.set(STORAGE_KEYS.CUSTOM_LOGO_URL, resizedImage);
+      // Salvar no Supabase via configService
+      await configService.updateConfig({ logoUrl: resizedImage });
+      
       setLogoUrl(resizedImage);
       showSuccess('Logo atualizada com sucesso!');
       window.dispatchEvent(new Event('storage')); // Notificar Navbar
@@ -158,12 +158,19 @@ export default function Settings() {
     }
   };
 
-  const handleRemoveLogo = () => {
+  const handleRemoveLogo = async () => {
     if (window.confirm('Deseja remover a logo personalizada e voltar para a logo padrão?')) {
-      storageService.remove(STORAGE_KEYS.CUSTOM_LOGO_URL);
-      setLogoUrl(defaultLogoImage);
-      showSuccess('Logo removida. Usando logo padrão.');
-      window.dispatchEvent(new Event('storage')); // Notificar Navbar
+      try {
+        // Salvar a URL padrão no Supabase
+        await configService.updateConfig({ logoUrl: defaultLogoImage });
+        
+        setLogoUrl(defaultLogoImage);
+        showSuccess('Logo removida. Usando logo padrão.');
+        window.dispatchEvent(new Event('storage')); // Notificar Navbar
+      } catch (error) {
+        console.error('Erro ao remover logo:', error);
+        showError('Erro ao remover logo.');
+      }
     }
   };
 

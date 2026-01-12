@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ShoppingBag, Menu, Filter } from 'lucide-react';
 import { cartService } from '../services/cart.service';
+import { configService } from '../services/config.service'; // Importar configService
 import SearchBar from './SearchBar';
 import defaultLogoImage from '/attached_assets/WhatsApp_Image_2025-11-25_at_15.53.40-removebg-preview_1765314447113.png';
 import { storageService, STORAGE_KEYS } from '../services/storage.service'; // Importar storageService
@@ -27,9 +28,9 @@ export default function Navbar({ onMenuToggle, searchTerm, onSearchTermChange, o
       setIsScrolled(window.scrollY > 10);
     };
     
-    const loadLogo = () => {
-      const customLogo = storageService.get<string>(STORAGE_KEYS.CUSTOM_LOGO_URL);
-      setLogoUrl(customLogo || defaultLogoImage);
+    const loadLogo = async () => {
+      const appConfig = await configService.getConfig();
+      setLogoUrl(appConfig.logoUrl || defaultLogoImage);
     };
 
     loadLogo();
