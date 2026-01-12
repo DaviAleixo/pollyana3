@@ -321,16 +321,19 @@ export default function ProductCatalog({ allProducts, categories, selectedCatego
                         (e.target as HTMLImageElement).src = 'https://via.placeholder.com/600x600?text=Sem+Imagem';
                       }}
                     />
-                    {isLaunch && (
-                      <span className="absolute top-3 left-3 bg-black text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-md">
-                        NOVO
-                      </span>
-                    )}
-                    {isDiscountActive && (
-                      <span className={`absolute top-3 ${isLaunch ? 'right-3' : 'left-3'} bg-red-600 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-md`}>
-                        {discountType === 'percentage' && savingsPercentage ? `${savingsPercentage}% OFF` : 'Promoção'}
-                      </span>
-                    )}
+                    {/* Badges de Status */}
+                    <div className="absolute top-3 left-3 flex gap-2 z-10">
+                        {isLaunch && (
+                          <span className="bg-black text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-md">
+                            NOVO
+                          </span>
+                        )}
+                        {isDiscountActive && (
+                          <span className="bg-red-600 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-md">
+                            {discountType === 'percentage' && savingsPercentage ? `${savingsPercentage}% OFF` : 'Promoção'}
+                          </span>
+                        )}
+                    </div>
                   </div>
 
                   {/* Informações do produto - altura variável */}
