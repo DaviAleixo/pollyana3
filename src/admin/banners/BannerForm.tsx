@@ -155,9 +155,18 @@ export default function BannerForm() {
       return;
     }
 
-    if (formData.linkType === 'category' && !formData.linkedCategoryId) {
-      showError('Selecione uma categoria para o banner.');
-      return;
+    if (formData.linkType === 'category') {
+      if (!formData.linkedCategoryId) {
+        showError('Selecione uma categoria para o banner.');
+        return;
+      }
+      // Se a categoria for a virtual 'Promoção', precisamos garantir que o ID não seja enviado ao DB
+      if (formData.linkedCategoryId === PROMOTION_CATEGORY_ID) {
+        // O service precisa saber que é a promoção, mas o DB não pode ter 99999
+        // Vamos tratar isso no service, mas precisamos garantir que o ID seja passado.
+        // Se o service não conseguir lidar com isso, teremos que mudar a lógica aqui.
+        // Por enquanto, vamos confiar que o service fará o mapeamento.
+      }
     }
 
     if (

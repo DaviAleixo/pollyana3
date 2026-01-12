@@ -4,6 +4,9 @@
 import { Banner } from '../types';
 import { supabase } from '../lib/supabase';
 
+// ID fixo para a categoria virtual de Promoção
+const PROMOTION_CATEGORY_ID = 99999;
+
 class BannersService {
   // Converte os dados do banco para o formato esperado pela aplicação
   private mapFromDB(dbBanner: any): Banner {
@@ -15,8 +18,9 @@ class BannersService {
       isVisible: dbBanner.is_visible,
       order: dbBanner.order,
       linkType: dbBanner.link_type,
+      // Se o linkedCategoryId for null no DB, mantemos null.
       linkedProductId: dbBanner.linked_product_id,
-      linkedCategoryId: dbBanner.linked_category_id,
+      linkedCategoryId: dbBanner.linked_category_id === null ? null : dbBanner.linked_category_id,
       externalUrl: dbBanner.external_url,
     };
   }
@@ -30,7 +34,14 @@ class BannersService {
     if (banner.order !== undefined) dbData.order = banner.order;
     if (banner.linkType !== undefined) dbData.link_type = banner.linkType;
     if (banner.linkedProductId !== undefined) dbData.linked_product_id = banner.linkedProductId;
-    if (banner.linkedCategoryId !== undefined) dbData.linked_category_id = banner.linkedCategoryId;
+    
+    // 🔥 TRATAMENTO DA CATEGORIA VIRTUAL PROMOÇÃO (99999)
+    if (banner.linkedCategoryId !== undefined) {
+      dbData.linked_category_id = banner.linkedCategoryId === PROMOTION_CATEGORY_ID 
+        ? null 
+        : banner.linkedCategoryId;
+    }
+    
     if (banner.externalUrl !== undefined) dbData.external_url = banner.externalUrl;
     return dbData;
   }
@@ -52,8 +63,20 @@ async getAll(onlyVisible: boolean = false): Promise<Banner[]> {
     return [];
   }
 
+  // Mapeamento e re-injeção da ID 99999 para banners que linkam para a promoção
   return Array.isArray(data)
-    ? data.map((b) => this.mapFromDB(b))
+    ? data.map((b) => {
+        const mapped = this.mapFromDB(b);
+        // Se o linkType for 'category' e linkedCategoryId for null, assumimos que é a promoção
+        if (mapped.linkType === 'category' && mapped.linkedCategoryId === null) {
+            // Nota: Isso é uma suposição. Se houver outras categorias com linkedCategoryId=null,
+            // elas serão tratadas como PROMOTION_CATEGORY_ID.
+            // Para evitar isso, o DB deveria ter um campo 'is_promotion_link'.
+            // Como não temos, vamos re-injetar 99999 para que o frontend saiba que é a promoção.
+            return { ...mapped, linkedCategoryId: PROMOTION_CATEGORY_ID };
+        }
+        return mapped;
+    })
     : [];
 }
 
@@ -70,7 +93,16 @@ async getAll(onlyVisible: boolean = false): Promise<Banner[]> {
     return undefined;
   }
 
-  return data ? this.mapFromDB(data) : undefined;
+  if (!data) return undefined;
+  
+  const mapped = this.mapFromDB(data);
+  
+  // Re-injetar 99999 se for um link de categoria com ID nula (assumindo que é a promoção)
+  if (mapped.linkType === 'category' && mapped.linkedCategoryId === null) {
+      return { ...mapped, linkedCategoryId: PROMOTION_CATEGORY_ID };
+  }
+
+  return mapped;
 }
 
   // Criar novo banner
