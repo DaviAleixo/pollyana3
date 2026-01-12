@@ -250,17 +250,17 @@ export default function ProductCatalog({ allProducts, categories, selectedCatego
               <>
                 <button
                   onClick={(e) => { e.stopPropagation(); prevBanner(); }}
-                  className="absolute left-4 top-1/2 -translate-y-1/2 z-10 bg-white/50 p-3 transition-all duration-300 rounded-full hover:bg-white/80"
+                  className="absolute left-4 top-1/2 -translate-y-1/2 z-10 p-3 transition-all duration-300 rounded-full hover:bg-white/20" // Fundo transparente, hover sutil
                   aria-label="Banner anterior"
                 >
-                  <ChevronLeft className="w-6 h-6 text-black" />
+                  <ChevronLeft className="w-6 h-6 text-white drop-shadow-md" /> {/* Ícone branco com sombra para destaque */}
                 </button>
                 <button
                   onClick={(e) => { e.stopPropagation(); nextBanner(); }}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 z-10 bg-white/50 p-3 transition-all duration-300 rounded-full hover:bg-white/80"
+                  className="absolute right-4 top-1/2 -translate-y-1/2 z-10 p-3 transition-all duration-300 rounded-full hover:bg-white/20" // Fundo transparente, hover sutil
                   aria-label="Próximo banner"
                 >
-                <ChevronRight className="w-6 h-6 text-black" />
+                <ChevronRight className="w-6 h-6 text-white drop-shadow-md" /> {/* Ícone branco com sombra para destaque */}
                 </button>
               </>
             )}
