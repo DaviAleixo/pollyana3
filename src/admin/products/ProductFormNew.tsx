@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Upload, X, Plus, Trash2 } from 'lucide-react';
 import { productsService } from '../../services/products.service';
@@ -46,6 +46,9 @@ export default function ProductFormNew() {
   const navigate = useNavigate();
   const { id } = useParams();
   const isEditing = !!id;
+  
+  // Referência para o input de arquivo principal
+  const mainImageInputRef = useRef<HTMLInputElement>(null);
 
   const [allCategories, setAllCategories] = useState<Category[]>([]);
   const [mainCategories, setMainCategories] = useState<Category[]>([]);
@@ -243,12 +246,20 @@ export default function ProductFormNew() {
       showError('Erro ao processar imagem principal');
     } finally {
       setMainImageUploadLoading(false);
+      // Limpar o valor do input após o upload para permitir o re-upload do mesmo arquivo
+      if (mainImageInputRef.current) {
+        mainImageInputRef.current.value = '';
+      }
     }
   };
 
   const handleRemoveMainImage = () => {
     setFormData((prev) => ({ ...prev, imagem: '' }));
     setMainImagePreview('');
+    // Limpar o valor do input de arquivo para permitir novo upload
+    if (mainImageInputRef.current) {
+      mainImageInputRef.current.value = '';
+    }
   };
 
   const toggleStandardColor = (colorName: string) => {
@@ -286,6 +297,8 @@ export default function ProductFormNew() {
       console.error(`Erro ao processar imagem para a cor ${colorName}:`, error);
       showError(`Erro ao processar imagem para a cor ${colorName}`);
     }
+    // Limpar o valor do input após o upload
+    e.target.value = '';
   };
 
   const handleRemoveStandardColorImage = (colorName: string) => {
@@ -318,6 +331,8 @@ export default function ProductFormNew() {
       showError('Erro ao processar imagem da nova cor personalizada');
     } finally {
       setNewCustomColorUploadLoading(false);
+      // Limpar o valor do input após o upload
+      e.target.value = '';
     }
   };
 
@@ -660,6 +675,7 @@ export default function ProductFormNew() {
                   onChange={handleMainImageUpload}
                   className="hidden"
                   disabled={mainImageUploadLoading}
+                  ref={mainImageInputRef} // Adicionado ref
                 />
               </label>
               <div className="bg-blue-50 border border-blue-200 p-3">
@@ -710,7 +726,7 @@ export default function ProductFormNew() {
                       />
                       <div
                         className="w-6 h-6 rounded-full border border-gray-300"
-                        style={{ backgroundColor: color.hex }}
+                        style={{ backgroundColor: color.hex || getColorHex(color.nome) || '#CCCCCC' }}
                       ></div>
                       <span className="text-sm font-medium">{color.nome}</span>
                     </label>
