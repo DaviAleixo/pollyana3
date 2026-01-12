@@ -144,12 +144,12 @@ export default function Settings() {
         quality: 0.9,
       });
       
-      // Salvar no Supabase via configService
+      // Salvar no Supabase via configService (isso também atualiza o localStorage e dispara 'storage')
       await configService.updateConfig({ logoUrl: resizedImage });
       
       setLogoUrl(resizedImage);
       showSuccess('Logo atualizada com sucesso!');
-      window.dispatchEvent(new Event('storage')); // Notificar Navbar
+      // Não é necessário disparar o evento 'storage' manualmente aqui
     } catch (error) {
       console.error('Erro ao processar imagem da logo:', error);
       showError('Erro ao processar imagem da logo.');
@@ -161,12 +161,12 @@ export default function Settings() {
   const handleRemoveLogo = async () => {
     if (window.confirm('Deseja remover a logo personalizada e voltar para a logo padrão?')) {
       try {
-        // Salvar a URL padrão no Supabase
+        // Salvar a URL padrão no Supabase (isso também atualiza o localStorage e dispara 'storage')
         await configService.updateConfig({ logoUrl: defaultLogoImage });
         
         setLogoUrl(defaultLogoImage);
         showSuccess('Logo removida. Usando logo padrão.');
-        window.dispatchEvent(new Event('storage')); // Notificar Navbar
+        // Não é necessário disparar o evento 'storage' manualmente aqui
       } catch (error) {
         console.error('Erro ao remover logo:', error);
         showError('Erro ao remover logo.');
